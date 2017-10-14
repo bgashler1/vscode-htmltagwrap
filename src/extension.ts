@@ -29,6 +29,10 @@ export function activate() {
 		var editor = vscode.window.activeTextEditor;
 		if (editor != undefined) {
 
+			
+			let isAutoClosingTagsEnabled = vscode.workspace.getConfiguration().get<boolean>("html.autoClosingTags");
+			console.log('TEST: is autoClosingTagsEnabled? ', isAutoClosingTagsEnabled);
+			
 			let tag = vscode.workspace.getConfiguration().get<string>("htmltagwrap.tag");
 			if (!tag) {
 				tag = 'p'; 
@@ -50,7 +54,11 @@ export function activate() {
 			var selectionEnd = selection.end;
 
 			if (selectionEnd.line > selectionStart.line) {
-				//Wrap it as a block
+
+				// ================
+				// Wrap it as a block
+				// ================
+
 				var lineAbove = selectionStart.line - 1;
 				var lineBelow = selectionEnd.line + 1;
 
@@ -89,22 +97,69 @@ export function activate() {
 				});
 			}
 			else {
-				//Wrap it inline
-				editor.edit((editBuilder) => {
+				// ================
+				// Wrap it inline
+				// ================
+
+				if (!isAutoClosingTagsEnabled) {
+					// When `html.autoClosingTags` is not set to false
+					editor.edit((editBuilder) => {
 						editBuilder.insert(new vscode.Position(selectionEnd.line, selectionEnd.character), '</' + tag + '>');
 						editBuilder.insert(new vscode.Position(selectionEnd.line, selectionStart.character), '<' + tag + '>');
 					}).then(() => {
 						console.log('Edit applied!');
-
-						var firstTagSelectionSelection: vscode.Selection = new vscode.Selection(selectionStart.line, selectionStart.character + 1, selectionStart.line, selectionStart.character + 1 + tag.length);
-						var lastTagSelectionSelection: vscode.Selection = new vscode.Selection(selectionEnd.line, selectionEnd.character + 3 + 1 + tag.length, selectionEnd.line, selectionEnd.character + 2 + 2 + 2*tag.length);
-						var tagSelections: vscode.Selection[] = [firstTagSelectionSelection, lastTagSelectionSelection];
-
+	
+	
+						let firstTagSelectionSelection: vscode.Selection = new vscode.Selection(selectionStart.line, selectionStart.character + 1, selectionStart.line, selectionStart.character + 1 + tag.length);
+						let lastTagSelectionSelection: vscode.Selection = new vscode.Selection(selectionEnd.line, selectionEnd.character + 3 + 1 + tag.length, selectionEnd.line, selectionEnd.character + 2 + 2 + 2*tag.length);
+						let tagSelections: vscode.Selection[] = [firstTagSelectionSelection, lastTagSelectionSelection];
+	
 						editor.selections = tagSelections;
 					}, (err) => {
 						console.log('Edit rejected!');
 						console.error(err);
 					});
+				}
+				else {
+					let selectionCharacterOffset: number;
+					// Prevent duplicate closing tag that happens when setting `html.autoClosingTags` is true (default behavior in newer releases of VS Code)
+					editor.edit((editBuilder) => {
+						// Initially, create empty tags, because `html.autoClosingTags` will not autoclose them without an element name inside
+						let openingTags: string = '<' + '>';
+						let closingTags: string = '</' + '>';
+						editBuilder.insert(new vscode.Position(selectionEnd.line, selectionEnd.character), closingTags);
+						editBuilder.insert(new vscode.Position(selectionEnd.line, selectionStart.character), openingTags);
+						selectionCharacterOffset = openingTags.length;
+
+					}, {
+							undoStopBefore: true,
+							undoStopAfter: false
+						}
+					).then(() => {
+						editor.edit((editBuilder) => {
+							editBuilder.insert(new vscode.Position(selectionEnd.line, selectionEnd.character + selectionCharacterOffset + 2), tag);
+							editBuilder.insert(new vscode.Position(selectionEnd.line, selectionStart.character + selectionCharacterOffset - 1), tag);
+							selectionCharacterOffset += tag.length;
+						}, {
+							undoStopBefore: false,
+							undoStopAfter: true
+							}
+						);
+					}, (err) => {
+						console.log('Tag insertion rejected!');
+						console.error(err);
+					}).then(() => {
+
+						let firstTagSelectionSelection: vscode.Selection = new vscode.Selection(selectionStart.line, selectionStart.character + selectionCharacterOffset - 1 - tag.length, selectionStart.line, selectionStart.character + selectionCharacterOffset - 1);
+						let lastTagSelectionSelection: vscode.Selection = new vscode.Selection(selectionEnd.line, selectionEnd.character + selectionCharacterOffset + 2, selectionEnd.line, selectionEnd.character + selectionCharacterOffset + 2 + tag.length);
+						let tagSelections: vscode.Selection[] = [firstTagSelectionSelection, lastTagSelectionSelection];
+	
+						editor.selections = tagSelections;
+					}, (err) => {
+						console.log('Element name insertion rejected!');
+						console.error(err);
+					});
+				}
 			}
 		};
 	});
