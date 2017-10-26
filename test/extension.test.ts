@@ -16,7 +16,7 @@ let tempFolder = samplesFolder + 'temp/';
 function parametrizedTest(startFilePath: string, expectedResultFilePath: string, selectionStart: Position, selectionEnd: Position, failMessage: string) {
 	let result: string;
 	let expectedResult: string;
-	let editor: TextEditor;
+	let editor: any;
 	let workingFilePath = tempFolder + startFilePath;
 	copySync(samplesFolder + startFilePath, workingFilePath, { clobber: true });
 
@@ -31,7 +31,7 @@ function parametrizedTest(startFilePath: string, expectedResultFilePath: string,
 		result = editor.document.getText();
 	}).then(() => {
 		return workspace.openTextDocument(samplesFolder + expectedResultFilePath);
-	}).then((expectedResultDocument) => {
+	}).then((expectedResultDocument: any) => {
 		expectedResult = expectedResultDocument.getText();
 	}).then(() => {
 		return commands.executeCommand('workbench.action.closeActiveEditor').then(() => new Promise((f) => setTimeout(f, 500)));
