@@ -2,7 +2,7 @@
 [![Build Status](https://travis-ci.org/Microsoft/vscode-htmltagwrap.svg?branch=master)](https://travis-ci.org/Microsoft/vscode-htmltagwrap)
 
 ## What is it
-Wraps your selection in HTML tags.  Can wrap an inline selection, a selection of multiple lines or mutiple selections.
+Wraps your selection in HTML tags.  Can wrap inline selections and selections that span multiple lines (works with both single selections and multiple selections at once).
 
 To use, select one or many chunks of code and press **"Alt + W" ("Option + W" for Mac).**
 
@@ -29,13 +29,20 @@ setting.json
 ## Report Issues
 I welcome pull requests.  Please report an issue on GitHub if you have trouble.
 
-## Updates
-### 0.0.4
+## Recent Updates
+### 0.0.6
 * Support for multiple selections
+
+# 0.0.5
+You can now configure the default **type of HTML tag** that is inserted (see README).
+
+Bug fix:
+Extension now also works if you have an empty selection.
+`"html.autoClosingTags": true` will no longer result in duplicate closing tags being inserted.
 
 ### 0.0.3
 * Spaces and tabs for indentation are now both supported.
-    - Special thanks to @gdziadkiewicz for his PR #4, which also introduced tests for development!
 
 ## Future features being explored
 - #5 Once a user hits spacebar, then the second multi-cursor is lost so the user can write attributes like classes or styles. (Idea courtesy of Ruben Rios)
+

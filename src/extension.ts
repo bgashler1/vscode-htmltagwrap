@@ -29,20 +29,17 @@ export function activate() {
 		}
 
 		/*
-		First, surround selection with empty tags to avoid a duplicate closing tag in newer VS Code releases:
-		`html.autoClosingTags` (a default setting) would normally autoclose the first tag if it has an element name inside
+		First, temporarily leave tags empty if they start/end on the same line to work around VS Code's default setting `html.autoClosingTags,`.
+		This setting would autocloses these opening tags if they come with element names already inside them.
 		*/
 		let openingTags: string = '<' + '>';
 		let closingTags: string = '</' + '>';
-			
+		let tagsMissingElements: Array<number> = [];
+		
 		let tag = vscode.workspace.getConfiguration().get<string>("htmltagwrap.tag");
 		if (!tag) {
 			tag = 'p'; 
 		}
-
-		
-		// We temporarily leave some tags empty to work around a default setting in VS Code that autocloses tags (to avoid duplicate closing tags)
-		let tagsMissingElements: Array<number> = [];
 
 		// Start inserting tags
 		editor.edit((editBuilder) => {
@@ -84,7 +81,6 @@ export function activate() {
 					let endingPosition = new vscode.Position(selectionEnd.line, selectionEnd.character);
 					editBuilder.insert(beginningPosition, openingTags);
 					editBuilder.insert(endingPosition, closingTags);
-					console.log('Inline index to push = ', i);
 					tagsMissingElements.push(i);
 				}
 			}
@@ -94,21 +90,21 @@ export function activate() {
 		}).then(() => {
 			// Add tag name elements
 
+			// Need to fetch selections again as they are no longer accurate
 			const selections = editor.selections;
-			console.log('const SELECTIONS = ', selections);
 			editor.edit((editBuilder) => {
 
 				let tagsMissingElementsSelections: vscode.Selection[] = tagsMissingElements.map(index => {
 					return selections[index];
 				});
-				console.log('tagsMissingElementsSelections = ', tagsMissingElementsSelections);
-
 
 				tagsMissingElementsSelections.map(selection => {
 					let tagFirst = selection.start.translate(0,-1);
 					let tagSecond = selection.end.translate(0,-1);
 					if(selection.start.character === selection.end.character) {
-						// When the selection is empty
+						// Empty selection
+						// When dealing with an empty selection, both the start and end position end up being *after* the closing tag
+						// backtrack to account for that
 						tagFirst = tagFirst.translate(0,-3);
 					}
 					editBuilder.insert(tagFirst, tag);
@@ -124,7 +120,7 @@ export function activate() {
 		}).then(() => {
 			console.log('Edit applied!');
 
-			// Need to fetch selections again as they are no longer accurate (since the new tags were inserted)
+			// Need to fetch selections again as they are no longer accurate
 			const selections = editor.selections;
 			const toSelect: Array<vscode.Selection> = new Array<vscode.Selection>();
 
@@ -151,12 +147,8 @@ export function activate() {
 					let startPosition = selection.start.character - 1;
 					let endPosition = selection.end.character - 1 + tag.length;
 
-					// ================
-					// Empty selection
-					// ================					
-					// When dealing with an empty selection, both the start and end position end up being *after* the closing tag
-					// backtrack to account for that
 					if(selection.start.character === selection.end.character) {
+						// Empty selection
 						startPosition -= 3;
 					}
 
