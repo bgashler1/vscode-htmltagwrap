@@ -33,7 +33,7 @@ I welcome pull requests.  Please report an issue on GitHub if you have trouble.
 ### 0.0.6
 * Support for multiple selections
 
-# 0.0.5
+### 0.0.5
 You can now configure the default **type of HTML tag** that is inserted (see README).
 
 Bug fix:
