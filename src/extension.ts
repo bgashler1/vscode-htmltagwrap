@@ -42,14 +42,14 @@ export function activate() {
 
 		
 		// We temporarily leave some tags empty to work around a default setting in VS Code that autocloses tags (to avoid duplicate closing tags)
-		let tagsMissingElements: Array<vscode.Position> = new Array <vscode.Position>();
+		let tagsMissingElements: Array<number> = [];
 
 		// Start inserting tags
 		editor.edit((editBuilder) => {
 
 			const selections = editor.selections;
 			
-			for(const selection of selections) {
+			for(const [i, selection] of selections.entries()) {
 
 				const selectionStart = selection.start;
 				const selectionEnd = selection.end;
@@ -84,8 +84,8 @@ export function activate() {
 					let endingPosition = new vscode.Position(selectionEnd.line, selectionEnd.character);
 					editBuilder.insert(beginningPosition, openingTags);
 					editBuilder.insert(endingPosition, closingTags);
-					tagsMissingElements.push(new vscode.Position(selectionEnd.line, selectionStart.character + 1));
-					tagsMissingElements.push(new vscode.Position(selectionEnd.line, selectionEnd.character + openingTags.length + 2));
+					console.log('Inline index to push = ', i);
+					tagsMissingElements.push(i);
 				}
 			}
 		}, {
@@ -95,11 +95,20 @@ export function activate() {
 			// Add tag name elements
 
 			const selections = editor.selections;
+			console.log('const SELECTIONS = ', selections);
 			editor.edit((editBuilder) => {
-				console.log("tagsMissingElements", tagsMissingElements);
 
-				tagsMissingElements.map(position => {
-					editBuilder.insert(position, tag);
+				let tagsMissingElementsSelections: vscode.Selection[] = tagsMissingElements.map(index => {
+					return selections[index];
+				});
+				console.log('tagsMissingElementsSelections = ', tagsMissingElementsSelections);
+
+
+				tagsMissingElementsSelections.map(selection => {
+					const tagFirst = selection.start.translate(0,-1);
+					const tagSecond = selection.end.translate(0,-1);
+					editBuilder.insert(tagFirst, tag);
+					editBuilder.insert(tagSecond, tag);
 				});
 			}, {
 				undoStopBefore: false,
