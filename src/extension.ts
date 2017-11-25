@@ -105,8 +105,12 @@ export function activate() {
 
 
 				tagsMissingElementsSelections.map(selection => {
-					const tagFirst = selection.start.translate(0,-1);
-					const tagSecond = selection.end.translate(0,-1);
+					let tagFirst = selection.start.translate(0,-1);
+					let tagSecond = selection.end.translate(0,-1);
+					if(selection.start.character === selection.end.character) {
+						// When the selection is empty
+						tagFirst = tagFirst.translate(0,-3);
+					}
 					editBuilder.insert(tagFirst, tag);
 					editBuilder.insert(tagSecond, tag);
 				});
