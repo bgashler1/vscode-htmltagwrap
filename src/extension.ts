@@ -2,7 +2,7 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
 import { setTimeout } from 'timers';
-import { TextEditorSelectionChangeKind, workspace } from 'vscode';
+import { TextEditorSelectionChangeKind, workspace, window } from 'vscode';
 
 function getTabString(editor: vscode.TextEditor): string {
 	let spacesUsed = <boolean>editor.options.insertSpaces;
@@ -167,7 +167,7 @@ export function activate() {
 		}).then(() => {
 
 			//TODO: move as much of this into previous promise as possible. Then chain the then to the poll promise (optimize async)
-			let autoDeselectClosingTag = vscode.workspace.getConfiguration().get<string>("htmltagwrap.autoDeselectClosingTag");
+			let autoDeselectClosingTag = vscode.workspace.getConfiguration().get<boolean>("htmltagwrap.autoDeselectClosingTag");
 			if (!autoDeselectClosingTag) {
 				console.log('autoDeselectClosingTag = false');
 				return;
@@ -175,36 +175,38 @@ export function activate() {
 			console.log('autoDeselectClosingTag = true');
 			// Wait for selections to be made, then listen for changes.
 			// Enter a mode to listen for whitespace and remove the second cursor
-			let pollingInterval = 500;
+			let pollingInterval = 100;
 			let Interval;
-			let listenForChanges;
+			let workspaceListener;
+			let windowListener;
 			let autoDeselectClosingTagAction = new Promise((resolve, reject) => {
 				const initialSelections = editor.selections;
-				let pollForDeselectionCriteria = () => {
+				let runListeners = () => {
 					// Have selections changed?
 
 					// Did user enter a space or carriage return?
 					// TODO: problem with carriage return (race condition from previous edit... may need to do a setTimeout)
-					listenForChanges = workspace.onDidChangeTextDocument((event)=> {
+					workspaceListener = workspace.onDidChangeTextDocument((event)=> {
 						let textEntered = event.contentChanges[0].text;
-						console.log('Text entered = ' + textEntered);
 
 						if (textEntered === ' ') {
 							resolve('✔ User pressed space');
 						}
 					});
-
-					//TODO: reference VS Code API regarding: TextDocumentContentChangeEvent && TextEditorSelectionChangeEvent... see also TextEditorSelectionChangeKind
-
-					//let Interval = setTimeout(() => pollForDeselectionCriteria(), pollingInterval);
-					//resolve('✔ Deselected last tag');
+					windowListener = window.onDidChangeTextEditorSelection((event)=> {
+						if (event.kind !== 1) {
+							// Anything that changes selection but keyboard input
+							resolve('✔ User changed selection');
+						}
+					});
 				}
-				pollForDeselectionCriteria();
-				//TODO: check if window is active and current document that htmltagwrap is working on is focused before we let the CPU go nuts
+				setTimeout(() => runListeners(),pollingInterval);
 			});
 			autoDeselectClosingTagAction.then((success) => {
+				//Cleanup memory and processes
 				clearTimeout(Interval);
-				listenForChanges.dispose();
+				workspaceListener.dispose();
+				windowListener.dispose();
 				
 				// Update selections
 				let newSelections: Array<vscode.Selection> = editor.selections.filter((selection, index) => {
@@ -212,13 +214,8 @@ export function activate() {
 						return selection;
 					}
 				});
-				console.log('newSelections ', newSelections);
-				console.log('currentSelections ', editor.selections);
+				// Remove whitespace on closing tag
 				editor.selections = newSelections;
-			
-
-
-
 				console.log(success);
 			});
 
