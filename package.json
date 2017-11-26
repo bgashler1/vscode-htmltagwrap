@@ -25,7 +25,23 @@
 			"key": "alt+w",
 			"mac": "alt+w",
 			"when": "editorTextFocus"
-		}]
+		}],
+		"configuration":{
+			"type": "object",
+			"title": "Htmltagwrap configuration",
+			"properties": {
+				"htmltagwrap.tag": {
+					"type": "string",
+					"default": "p",
+					"description": "The default HTML tag to insert when using htmltagwrap."
+				},
+				"htmltagwrap.autoDeselectClosingTag": {
+					"type": "boolean",
+					"default": false,
+					"description": "Experimental: automatically deselect the closing tag after inserting a space."
+				}
+			}
+		}
 	},
 	"scripts": {
 		"vscode:prepublish": "tsc -p ./",
