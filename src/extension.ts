@@ -175,8 +175,7 @@ export function activate() {
 			console.log('autoDeselectClosingTag = true');
 			// Wait for selections to be made, then listen for changes.
 			// Enter a mode to listen for whitespace and remove the second cursor
-			let pollingInterval = 100;
-			let Interval;
+			let interval = 100;
 			let workspaceListener;
 			let windowListener;
 			let autoDeselectClosingTagAction = new Promise((resolve, reject) => {
@@ -200,21 +199,35 @@ export function activate() {
 						}
 					});
 				}
-				setTimeout(() => runListeners(),pollingInterval);
+				// Prevents a race condition where we think user changed selection (but it was from previous editing process)
+				//TODO: try to avoid setTimeout if possible
+				setTimeout(() => runListeners(),interval);
 			});
 			autoDeselectClosingTagAction.then((success) => {
 				//Cleanup memory and processes
-				clearTimeout(Interval);
 				workspaceListener.dispose();
 				windowListener.dispose();
 				
 				// Update selections
-				let newSelections: Array<vscode.Selection> = editor.selections.filter((selection, index) => {
-					if (index % 2 === 0) {
-						return selection;
-					}
+				const initialSelections = editor.selections;
+				let newSelections: Array<vscode.Selection>;
+				editor.edit((editBuilder) => {
+					newSelections = editor.selections.filter((selection, index) => {
+						if (index % 2 === 0) {
+							return selection;
+						}
+						else {
+							// Remove whitespace on closing tag
+							// Since closing tag selection is now length zero and after the whitespace, select a range one character backwards
+								const closingTagWhitespace: vscode.Range = selection.with({start: selection.end.translate(0,-1), end: undefined});
+								editBuilder.delete(closingTagWhitespace);
+							}
+						});
+				}, {
+					undoStopBefore: false,
+					undoStopAfter: false
 				});
-				// Remove whitespace on closing tag
+
 				editor.selections = newSelections;
 				console.log(success);
 			});
