@@ -121,120 +121,118 @@ export function activate() {
 			console.error(err);
 		}).then(() => {
 			console.log('Edit applied!');
-
-			// Need to fetch selections again as they are no longer accurate
 			const selections = editor.selections;
 			const toSelect: Array<vscode.Selection> = new Array<vscode.Selection>();
-
-			for(let selection of selections) {
+			return new Promise(resolve => {
+				// Need to fetch selections again as they are no longer accurate
 				
-				// Careful : the selection starts at the beginning of the text but ends *after* the closing tag
-				if(selection.end.line !== selection.start.line) {
-					// ================
-					// Block selection
-					// ================
-					let lineAbove = selection.start.line - 1;
-					let lineBelow = selection.end.line;
-					let startPosition = selection.start.character - tabSizeSpace.length + 1;
-					let endPosition = selection.end.character - 1 - tag.length;
 
-					toSelect.push(new vscode.Selection(lineAbove, startPosition, lineAbove, startPosition + tag.length));
-					toSelect.push(new vscode.Selection(lineBelow, endPosition, lineBelow, endPosition + tag.length));
-				}
-				else {
-					// ================
-					// Inline selection
-					// ================
-					// same line, just get to the tag element by navigating backwards
-					let startPosition = selection.start.character - 1;
-					let endPosition = selection.end.character - 1 + tag.length;
+				for(let selection of selections) {
+					
+					// Careful : the selection starts at the beginning of the text but ends *after* the closing tag
+					if(selection.end.line !== selection.start.line) {
+						// ================
+						// Block selection
+						// ================
+						let lineAbove = selection.start.line - 1;
+						let lineBelow = selection.end.line;
+						let startPosition = selection.start.character - tabSizeSpace.length + 1;
+						let endPosition = selection.end.character - 1 - tag.length;
 
-					if(selection.start.character === selection.end.character) {
-						// Empty selection
-						startPosition -= 3;
+						toSelect.push(new vscode.Selection(lineAbove, startPosition, lineAbove, startPosition + tag.length));
+						toSelect.push(new vscode.Selection(lineBelow, endPosition, lineBelow, endPosition + tag.length));
 					}
+					else {
+						// ================
+						// Inline selection
+						// ================
+						// same line, just get to the tag element by navigating backwards
+						let startPosition = selection.start.character - 1;
+						let endPosition = selection.end.character - 1 + tag.length;
 
-					toSelect.push(new vscode.Selection(selection.start.line, startPosition, selection.start.line, startPosition + tag.length))
-					toSelect.push(new vscode.Selection(selection.end.line, endPosition, selection.end.line, endPosition + tag.length))
+						if(selection.start.character === selection.end.character) {
+							// Empty selection
+							startPosition -= 3;
+						}
+
+						toSelect.push(new vscode.Selection(selection.start.line, startPosition, selection.start.line, startPosition + tag.length))
+						toSelect.push(new vscode.Selection(selection.end.line, endPosition, selection.end.line, endPosition + tag.length))
+					}
+					resolve();
+					
 				}
+			}).then(() => {
+				return new Promise(resolve => {
+					editor.selections = toSelect;
+					let windowListener = window.onDidChangeTextEditorSelection((event)=> {
+						resolve();
+					})	
+				});
+			}).then(()=> {
 
-				editor.selections = toSelect;
-			}
-
-		}, (err) => {
-			console.log('Edit rejected!');
-			console.error(err);
-		}).then(() => {
-
-			//TODO: move as much of this into previous promise as possible. Then chain the then to the poll promise (optimize async)
-			let autoDeselectClosingTag = vscode.workspace.getConfiguration().get<boolean>("htmltagwrap.autoDeselectClosingTag");
-			if (!autoDeselectClosingTag) {
-				console.log('autoDeselectClosingTag = false');
-				return;
-			}
-			console.log('autoDeselectClosingTag = true');
-			// Wait for selections to be made, then listen for changes.
-			// Enter a mode to listen for whitespace and remove the second cursor
-			let interval = 100;
-			let workspaceListener;
-			let windowListener;
-			let autoDeselectClosingTagAction = new Promise((resolve, reject) => {
-				const initialSelections = editor.selections;
-				let runListeners = () => {
-					// Have selections changed?
-
-					// Did user enter a space or carriage return?
-					// TODO: problem with carriage return (race condition from previous edit... may need to do a setTimeout)
-					workspaceListener = workspace.onDidChangeTextDocument((event)=> {
-						let textEntered = event.contentChanges[0].text;
-
-						if (textEntered === ' ') {
-							resolve('✔ User pressed space');
-						}
-					});
-					windowListener = window.onDidChangeTextEditorSelection((event)=> {
-						if (event.kind !== 1) {
-							// Anything that changes selection but keyboard input
-							resolve('✔ User changed selection');
-						}
-					});
+				let autoDeselectClosingTag = vscode.workspace.getConfiguration().get<boolean>("htmltagwrap.autoDeselectClosingTag");
+				if (!autoDeselectClosingTag) {
+					console.log('autoDeselectClosingTag = false');
+					return;
 				}
-				// Prevents a race condition where we think user changed selection (but it was from previous editing process)
-				//TODO: try to avoid setTimeout if possible
-				setTimeout(() => runListeners(),interval);
-			});
-			autoDeselectClosingTagAction.then((success) => {
-				//Cleanup memory and processes
-				workspaceListener.dispose();
-				windowListener.dispose();
-				
-				// Update selections
-				const initialSelections = editor.selections;
-				let newSelections: Array<vscode.Selection>;
-				editor.edit((editBuilder) => {
-					newSelections = editor.selections.filter((selection, index) => {
-						if (index % 2 === 0) {
-							return selection;
-						}
-						else {
-							// Remove whitespace on closing tag
-							// Since closing tag selection is now length zero and after the whitespace, select a range one character backwards
-								const closingTagWhitespace: vscode.Range = selection.with({start: selection.end.translate(0,-1), end: undefined});
-								editBuilder.delete(closingTagWhitespace);
+				console.log('autoDeselectClosingTag = true');
+				// Wait for selections to be made, then listen for changes.
+				// Enter a mode to listen for whitespace and remove the second cursor
+				let workspaceListener;
+				let windowListener;
+				let autoDeselectClosingTagAction = new Promise((resolve, reject) => {
+					const initialSelections = editor.selections;
+						// Have selections changed?
+	
+						// Did user enter a space or carriage return?
+						workspaceListener = workspace.onDidChangeTextDocument((event)=> {
+							let textEntered = event.contentChanges[0].text;
+	
+							if (textEntered === ' ') {
+								resolve('✔ User pressed space');
 							}
 						});
-				}, {
-					undoStopBefore: false,
-					undoStopAfter: false
+						windowListener = window.onDidChangeTextEditorSelection((event)=> {
+							if (event.kind !== 1) {
+								// Anything that changes selection but keyboard input
+								resolve('✔ User changed selection');
+							}
+						});
+				});
+				autoDeselectClosingTagAction.then((success) => {
+					//Cleanup memory and processes
+					workspaceListener.dispose();
+					windowListener.dispose();
+					
+					// Update selections
+					const initialSelections = editor.selections;
+					let newSelections: Array<vscode.Selection>;
+					editor.edit((editBuilder) => {
+						newSelections = editor.selections.filter((selection, index) => {
+							if (index % 2 === 0) {
+								return selection;
+							}
+							else {
+								// Remove whitespace on closing tag
+								// Since closing tag selection is now length zero and after the whitespace, select a range one character backwards
+									const closingTagWhitespace: vscode.Range = selection.with({start: selection.end.translate(0,-1), end: undefined});
+									editBuilder.delete(closingTagWhitespace);
+								}
+							});
+					}, {
+						undoStopBefore: false,
+						undoStopAfter: false
+					});
+	
+					editor.selections = newSelections;
+					console.log(success);
 				});
 
-				editor.selections = newSelections;
-				console.log(success);
+
+				
 			});
-
-
 		}, (err) => {
-			console.log('AutoDeselectClosingTag promise error!');
+			console.log('Edit rejected!');
 			console.error(err);
 		});
 	});
