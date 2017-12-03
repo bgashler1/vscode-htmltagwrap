@@ -4,7 +4,7 @@
 //
 
 import {expect} from 'chai';
-import {workspace, window, Selection, Position, commands, extensions, Uri, TextEditor, Range} from 'vscode';
+import {workspace, window, Selection, Position, commands, extensions, Uri, TextEditor, Range, WorkspaceConfiguration} from 'vscode';
 import {copySync, CopyOptions, emptyDir} from 'fs-extra';
 import * as extension from '../src/extension';
 
@@ -16,6 +16,9 @@ let extensionID = 'bradgashler.htmltagwrap';
 let samplesFolder = extensions.getExtension(extensionID).extensionPath + '/test/sampleFiles/';
 let tempFolder = samplesFolder + 'temp/';
 
+interface testOptions {
+	customTag?: boolean;
+}
 function parametrizedSingleSelectionTest(startFilePath: string, expectedResultFilePath: string, selectionStart: Position, selectionEnd: Position, failMessage: string) {
 	const selection:CursorSelection = [selectionStart, selectionEnd];
 	const selections: Array<CursorSelection> = [selection];
@@ -23,28 +26,61 @@ function parametrizedSingleSelectionTest(startFilePath: string, expectedResultFi
 	return parametrizedMultiSelectionTest(startFilePath, expectedResultFilePath, selections, failMessage);
 }
 
-function parametrizedMultiSelectionTest(startFilePath: string, expectedResultFilePath: string, selections: Array<CursorSelection>, failMessage: string) {
+function parametrizedMultiSelectionTest(startFilePath: string, expectedResultFilePath: string, selections: Array<CursorSelection>, failMessage: string, options?: testOptions) {
 	let result: string;
 	let expectedResult: string;
 	let editor: any;
 	let workingFilePath = tempFolder + startFilePath;
+	let tagWasUpdatedByTest: boolean;
+	const tagConfig = workspace.getConfiguration('htmltagwrap');
+
 	copySync(samplesFolder + startFilePath, workingFilePath, { clobber: true });
 
 	let testPromise = workspace.openTextDocument(workingFilePath).then((workingDocument) => {
 		return window.showTextDocument(workingDocument);
 	}).then((_editor) => {
-		editor = _editor;
-	}).then(() => {
-		editor.selections = selections.map(s => new Selection(s[0], s[1]));
-		return commands.executeCommand('extension.htmlTagWrap').then(() => new Promise((f) => setTimeout(f, 500)));
-	}).then(() => {
-		result = editor.document.getText();
-	}).then(() => {
-		return workspace.openTextDocument(samplesFolder + expectedResultFilePath);
-	}).then((expectedResultDocument: any) => {
-		expectedResult = expectedResultDocument.getText();
-	}).then(() => {
-		return commands.executeCommand('workbench.action.closeActiveEditor').then(() => new Promise((f) => setTimeout(f, 500)));
+		return new Promise(resolve => {
+			editor = _editor;
+			if (options) {
+				tagConfig.update('tag','helloworld', true).then(success => {
+					tagWasUpdatedByTest = true;
+					resolve('✔ Updated tag to "helloworld"');
+				}, rejected => {
+					rejected('failed to update tag to "helloworld"');
+				});
+			}
+			else {
+				resolve('No need to update tag');
+			}
+		}).then(success => {
+			editor.selections = selections.map(s => new Selection(s[0], s[1]));
+			return commands.executeCommand('extension.htmlTagWrap').then(() => new Promise((f) => setTimeout(f, 500)));
+		}, failure => {
+			console.error(failure);
+		}).then(() => {
+			return new Promise(resolve => {
+				if (tagWasUpdatedByTest) {
+					tagConfig.update('tag', undefined, true).then(success => {
+						resolve('✔ Removed temporary tag setting for "helloworld" tag');
+						tagWasUpdatedByTest = false;
+					}, rejected => {
+						rejected('failed to remove temporary tag setting for "helloworld"');
+					});
+				} else {
+					resolve();
+				}
+			}).then(() => {
+				result = editor.document.getText();
+			},failure => {
+				console.error(failure)
+			});
+		}).then(() => {
+			return workspace.openTextDocument(samplesFolder + expectedResultFilePath);
+		}).then((expectedResultDocument: any) => {
+			expectedResult = expectedResultDocument.getText();
+		}).then(() => {
+			return commands.executeCommand('workbench.action.closeActiveEditor').then(() => new Promise((f) => setTimeout(f, 500)));
+		});
 	});
 
 	return testPromise.then(() => {
@@ -111,6 +147,20 @@ suite('Extension Tests', function () {
 			[new Position(11, 11), new Position(11, 15)] 
 		];
 		return parametrizedMultiSelectionTest('textBlocks.html', 'expectedMultiSelectionMixedLineBlockFileResult.html', selections, 'Multiple selections mixed (text and block) does not work');
+	});
+
+	test('Custom tag test', function() {
+		const selections: Array<CursorSelection> = [ 
+			[new Position(1, 4), new Position(1, 21)],
+			[new Position(2, 4), new Position(2, 17)], 
+			[new Position(5, 0), new Position(6, 13)], 
+			[new Position(10, 8), new Position(10, 19)],
+			[new Position(11, 11), new Position(11, 15)] 
+		];
+		const options = {
+			customTag: true
+		}
+		return parametrizedMultiSelectionTest('textBlocks.html', 'expectedCustomTagFileResult.html', selections, 'Custom tag value "helloworld" does not work', options);
 	});
 
 

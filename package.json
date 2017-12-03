@@ -9,7 +9,7 @@
 	"version": "0.0.6",
 	"publisher": "bradgashler",
 	"engines": {
-		"vscode": "^1.5.0"
+		"vscode": "^1.6.0"
 	},
 	"activationEvents": [
 		"onCommand:extension.htmlTagWrap"
@@ -52,7 +52,7 @@
 	},
 	"devDependencies": {
 		"typescript": "^2.0.3",
-		"vscode": "^1.0.0",
+		"vscode": "^1.1.9",
 		"mocha": "^2.3.3",
 		"@types/node": "^6.0.40",
 		"@types/mocha": "^2.2.32",
