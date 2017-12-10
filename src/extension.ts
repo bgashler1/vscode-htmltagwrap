@@ -37,6 +37,8 @@ export function activate() {
 		let tagsMissingElements: Array<number> = [];
 		
 		let tag = vscode.workspace.getConfiguration().get<string>("htmltagwrap.tag");
+		let autoDeselectClosingTag = vscode.workspace.getConfiguration().get<boolean>("htmltagwrap.autoDeselectClosingTag");
+		
 		if (!tag) {
 			tag = 'p'; 
 		}
@@ -92,7 +94,7 @@ export function activate() {
 
 			// Need to fetch selections again as they are no longer accurate
 			const selections = editor.selections;
-			editor.edit((editBuilder) => {
+			return editor.edit((editBuilder) => {
 
 				let tagsMissingElementsSelections: vscode.Selection[] = tagsMissingElements.map(index => {
 					return selections[index];
@@ -145,8 +147,8 @@ export function activate() {
 						// Inline selection
 						// ================
 						// same line, just get to the tag element by navigating backwards
-						let startPosition = selection.start.character - 1;
-						let endPosition = selection.end.character - 1 + tag.length;
+						let startPosition = selection.start.character - 2;
+						let endPosition = selection.end.character - 3 + tag.length;
 
 						if(selection.start.character === selection.end.character) {
 							// Empty selection
@@ -163,12 +165,12 @@ export function activate() {
 				return new Promise(resolve => {
 					editor.selections = toSelect;
 					let windowListener = vscode.window.onDidChangeTextEditorSelection((event)=> {
-						resolve();
-					})	
+						resolve('✔ Selections updated');
+					});
 				});
-			}).then(()=> {
+			}).then(selectionsPromiseFulfilled => {
+				console.log(selectionsPromiseFulfilled);
 
-				let autoDeselectClosingTag = vscode.workspace.getConfiguration().get<boolean>("htmltagwrap.autoDeselectClosingTag");
 				if (!autoDeselectClosingTag) {
 					console.log('autoDeselectClosingTag = false');
 					return;
@@ -176,28 +178,27 @@ export function activate() {
 				console.log('autoDeselectClosingTag = true');
 				// Wait for selections to be made, then listen for changes.
 				// Enter a mode to listen for whitespace and remove the second cursor
-				let workspaceListener;
-				let windowListener;
+				let workspaceListener: vscode.Disposable;
+				let windowListener: vscode.Disposable;
 				let autoDeselectClosingTagAction = new Promise((resolve, reject) => {
-					const initialSelections = editor.selections;
-						// Have selections changed?
-	
-						// Did user enter a space or carriage return?
-						workspaceListener = vscode.workspace.onDidChangeTextDocument((event)=> {
-							let textEntered = event.contentChanges[0].text;
-	
-							if (textEntered === ' ') {
-								resolve('✔ User pressed space');
-							}
-						});
-						windowListener = vscode.window.onDidChangeTextEditorSelection((event)=> {
-							if (event.kind !== 1) {
-								// Anything that changes selection but keyboard input
-								resolve('✔ User changed selection');
-							}
-						});
+					// Did user enter a space
+					workspaceListener = vscode.workspace.onDidChangeTextDocument((event)=> {
+						let textEntered = event.contentChanges[0].text;
+						if (textEntered === ' ') {
+							resolve('✔ User pressed space');
+						}
+					});
+					
+					// Have selections changed?
+					const initialSelections = editor.selections;			
+					windowListener = vscode.window.onDidChangeTextEditorSelection((event)=> {
+						if (event.kind !== 1) {
+							// Anything that changes selection but keyboard input
+							resolve('✔ User changed selection');
+						}
+					});
 				});
-				autoDeselectClosingTagAction.then((success) => {
+				return autoDeselectClosingTagAction.then((success) => {
 					//Cleanup memory and processes
 					workspaceListener.dispose();
 					windowListener.dispose();
@@ -208,7 +209,9 @@ export function activate() {
 					editor.edit((editBuilder) => {
 						newSelections = editor.selections.filter((selection, index) => {
 							if (index % 2 === 0) {
-								return selection;
+								// Compensate for the space that the user added (which offset selection and which offset was not corrected when we deleted it)
+								const correctedSelection = selection.with({ start: selection.start.translate(0, -index), end: selection.end.translate(0,-index)})
+								return correctedSelection;
 							}
 							else {
 								// Remove whitespace on closing tag
@@ -220,14 +223,12 @@ export function activate() {
 					}, {
 						undoStopBefore: false,
 						undoStopAfter: false
+					}).then(()=> {
+						editor.selections = newSelections;
+						console.log(success);
 					});
-	
-					editor.selections = newSelections;
-					console.log(success);
 				});
 
-
-				
 			});
 		}, (err) => {
 			console.log('Edit rejected!');
