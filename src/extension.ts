@@ -192,9 +192,10 @@ export function activate() {
 					// Have selections changed?
 					const initialSelections = editor.selections;			
 					windowListener = vscode.window.onDidChangeTextEditorSelection((event)=> {
-						if (event.kind !== 1) {
-							// Anything that changes selection but keyboard input
-							resolve('✔ User changed selection');
+						if (event.kind !== undefined && event.kind !== 1) {
+							// Listen for anything that changes selection but keyboard input
+							// or an undefined event (such as backspace clearing last selected character)
+							resolve('✔ User changed selection. Event type: ' + event.kind);
 						}
 					});
 				});
