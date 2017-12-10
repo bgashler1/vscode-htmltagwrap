@@ -1,8 +1,6 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
-import { setTimeout } from 'timers';
-import { TextEditorSelectionChangeKind, workspace, window } from 'vscode';
 
 function getTabString(editor: vscode.TextEditor): string {
 	let spacesUsed = <boolean>editor.options.insertSpaces;
@@ -164,7 +162,7 @@ export function activate() {
 			}).then(() => {
 				return new Promise(resolve => {
 					editor.selections = toSelect;
-					let windowListener = window.onDidChangeTextEditorSelection((event)=> {
+					let windowListener = vscode.window.onDidChangeTextEditorSelection((event)=> {
 						resolve();
 					})	
 				});
@@ -185,14 +183,14 @@ export function activate() {
 						// Have selections changed?
 	
 						// Did user enter a space or carriage return?
-						workspaceListener = workspace.onDidChangeTextDocument((event)=> {
+						workspaceListener = vscode.workspace.onDidChangeTextDocument((event)=> {
 							let textEntered = event.contentChanges[0].text;
 	
 							if (textEntered === ' ') {
 								resolve('✔ User pressed space');
 							}
 						});
-						windowListener = window.onDidChangeTextEditorSelection((event)=> {
+						windowListener = vscode.window.onDidChangeTextEditorSelection((event)=> {
 							if (event.kind !== 1) {
 								// Anything that changes selection but keyboard input
 								resolve('✔ User changed selection');
