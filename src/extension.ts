@@ -204,41 +204,33 @@ export function activate() {
 					workspaceListener.dispose();
 					windowListener.dispose();
 					
-					// Update selections
-					const initialSelections = editor.selections;
 					let newSelections = new Array<vscode.Selection>();
 					editor.edit((editBuilder) => {
+						// Update selections
+						const initialSelections = editor.selections;
 						let newLine: boolean = false;
 						let charOffset = 0;
 						for (const [index, selection] of initialSelections.entries()) {
-							const currentSelectionLine = selection.start.line
-							const previousIndex = index < 1? 0 : index - 1;
-							const previousSelectionLine = initialSelections[previousIndex].start.line
-							newLine = currentSelectionLine > previousSelectionLine ? true : false;
-							if (index % 2 === 0) {
-								if (newLine) { 
-									charOffset = 0;
-								};
-								// Compensate for the space that the user added (which offset selection and which offset was not corrected when we deleted it)
-								const correctedStart = new vscode.Position(selection.start.line, selection.start.character - charOffset);
-								const correctedEnd = correctedStart;
-								const correctedSelection = new vscode.Selection(correctedStart, correctedEnd);
-								newSelections.push(correctedSelection);
-								charOffset++;
-							}
-							
-							else {
+							if (index % 2 !== 0) {
 								// Remove whitespace on closing tag
 								// Since closing tag selection is now length zero and after the whitespace, select a range one character backwards
-									const closingTagWhitespace: vscode.Range = selection.with({start: selection.end.translate(0,-1), end: undefined});
-									editBuilder.delete(closingTagWhitespace);
-								}
-							};
-							console.log('initialSelections = ', initialSelections)
-							console.log('newSelections = ', newSelections)
+								const closingTagWhitespace: vscode.Range = selection.with({start: selection.end.translate(0,-1), end: undefined});
+								editBuilder.delete(closingTagWhitespace);
+							}
+						};
 					}, {
 						undoStopBefore: false,
 						undoStopAfter: false
+					}).then(()=> {
+						// Update selections
+						const initialSelections = editor.selections;
+						for (const [index, selection] of initialSelections.entries()) {
+							if (index % 2 === 0) {
+								newSelections.push(selection);
+							}
+							console.log('initialSelections = ', initialSelections)
+							console.log('newSelections = ', newSelections)
+						}
 					}).then(()=> {
 						editor.selections = newSelections;
 						console.log(success);
