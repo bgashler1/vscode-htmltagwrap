@@ -1,4 +1,8 @@
 # Changelog
+## **[0.0.7]** - 2017-12-16
+* After wrapping, you can add attributes to just the opening tags.
+* Upon `spacebar` press, cursors in the closing tags go away.
+
 ## **[0.0.6]** - 2017-11-25
 Supports **multiple selections.**
 

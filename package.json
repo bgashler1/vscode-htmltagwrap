@@ -6,7 +6,7 @@
 			"url" : "https://github.com/bgashler1/vscode-htmltagwrap"
 		},
 	"description": "Wraps selected code with HTML tags",
-	"version": "0.0.6",
+	"version": "0.0.7",
 	"publisher": "bradgashler",
 	"engines": {
 		"vscode": "^1.6.0"
@@ -37,8 +37,8 @@
 				},
 				"htmltagwrap.autoDeselectClosingTag": {
 					"type": "boolean",
-					"default": false,
-					"description": "Experimental: automatically deselect the closing tag after inserting a space."
+					"default": true,
+					"description": "Automatically deselect the closing tag after inserting a space."
 				}
 			}
 		}
