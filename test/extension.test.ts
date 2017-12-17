@@ -163,6 +163,20 @@ suite('Extension Tests', function () {
 		return parametrizedMultiSelectionTest('textBlocks.html', 'expectedCustomTagFileResult.html', selections, 'Custom tag value "helloworld" does not work', options);
 	});
 
+	test('Multiple same line selections (regression test)', function() {
+		const selections: Array<CursorSelection> = [ 
+			[new Position(10, 8), new Position(10, 12)],
+			[new Position(10, 13), new Position(10, 15)],
+			[new Position(10, 16), new Position(10, 19)],
+			[new Position(10, 20), new Position(10, 25)],
+			[new Position(10, 26), new Position(10, 31)],
+		];
+		const options = {
+			customTag: true
+		}
+		return parametrizedMultiSelectionTest('textBlocks.html', 'expectedMultipleSameLineSelectionsFileResult.html', selections, 'Multiple same line selections error. (regression)', options);
+	});
+
 
 	teardown((done) => emptyDir(tempFolder, done));
 });
