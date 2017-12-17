@@ -228,8 +228,6 @@ export function activate() {
 							if (index % 2 === 0) {
 								newSelections.push(selection);
 							}
-							console.log('initialSelections = ', initialSelections)
-							console.log('newSelections = ', newSelections)
 						}
 					}).then(()=> {
 						editor.selections = newSelections;
