@@ -147,12 +147,12 @@ export function activate() {
 						// Inline selection
 						// ================
 						// same line, just get to the tag element by navigating backwards
-						let startPosition = selection.start.character - 2;
-						let endPosition = selection.end.character - 3 + tag.length;
+						let startPosition = selection.start.character - 1 - tag.length;
+						let endPosition = selection.end.character - 1 - tag.length;
 
 						if(selection.start.character === selection.end.character) {
 							// Empty selection
-							startPosition -= 3;
+							startPosition = startPosition - 3 - tag.length;
 						}
 
 						toSelect.push(new vscode.Selection(selection.start.line, startPosition, selection.start.line, startPosition + tag.length))
