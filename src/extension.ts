@@ -13,7 +13,7 @@ function getTabString(editor: vscode.TextEditor): string {
 }
 
 // this method is called when your extension is activated
-export function activate() {
+export function activate(extensionContext?) {
 
 	// The command has been defined in the package.json file
 	// Now provide the implementation of the command with  registerCommand
@@ -26,6 +26,17 @@ export function activate() {
 
 		if(editor == null) {
 			return;
+		}
+
+		if (extensionContext) {
+			// Prevents tests from breaking
+			const currentUpdate = '0.0.7';
+			const hasUserSeenCurrentUpdateMessage: boolean = extensionContext.globalState.get('lastUpdateSeen') === currentUpdate ? true : false;
+			if (!hasUserSeenCurrentUpdateMessage) {
+				vscode.window.showInformationMessage('htmltagwrap now supports adding attributes on opening tags');
+				extensionContext.globalState.update('lastUpdateSeen', currentUpdate);
+				console.log('lastUpdateSeen = ', extensionContext.globalState.get('lastUpdateSeen'));
+			}
 		}
 
 		/*
