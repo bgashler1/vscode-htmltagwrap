@@ -6,10 +6,10 @@
 			"url" : "https://github.com/bgashler1/vscode-htmltagwrap"
 		},
 	"description": "Wraps selected code with HTML tags",
-	"version": "0.0.6",
+	"version": "0.0.7",
 	"publisher": "bradgashler",
 	"engines": {
-		"vscode": "^1.5.0"
+		"vscode": "^1.6.0"
 	},
 	"activationEvents": [
 		"onCommand:extension.htmlTagWrap"
@@ -25,7 +25,23 @@
 			"key": "alt+w",
 			"mac": "alt+w",
 			"when": "editorTextFocus"
-		}]
+		}],
+		"configuration":{
+			"type": "object",
+			"title": "Htmltagwrap configuration",
+			"properties": {
+				"htmltagwrap.tag": {
+					"type": "string",
+					"default": "p",
+					"description": "The default HTML tag to insert when using htmltagwrap."
+				},
+				"htmltagwrap.autoDeselectClosingTag": {
+					"type": "boolean",
+					"default": true,
+					"description": "Automatically deselect the closing tag after inserting a space."
+				}
+			}
+		}
 	},
 	"scripts": {
 		"vscode:prepublish": "tsc -p ./",
@@ -36,7 +52,7 @@
 	},
 	"devDependencies": {
 		"typescript": "^2.0.3",
-		"vscode": "^1.0.0",
+		"vscode": "^1.1.9",
 		"mocha": "^2.3.3",
 		"@types/node": "^6.0.40",
 		"@types/mocha": "^2.2.32",
