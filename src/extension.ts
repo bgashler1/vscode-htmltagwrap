@@ -181,17 +181,18 @@ export function activate(extensionContext?) {
 				});
 			}).then(selectionsPromiseFulfilled => {
 				console.log(selectionsPromiseFulfilled);
-
+				interface SpaceInsertedPromiseResolution {
+					spaceInsertedAt: vscode.Range;
+					initialSelections: vscode.Selection[];
+				}
+				
 				if (!autoDeselectClosingTag) {
-					console.log('autoDeselectClosingTag = false');
 					return;
 				}
-				console.log('autoDeselectClosingTag = true');
 				// Wait for selections to be made, then listen for changes.
 				// Enter a mode to listen for whitespace and remove the second cursor
 				let workspaceListener: vscode.Disposable;
 				let windowListener: vscode.Disposable;
-
 				let autoDeselectClosingTagAction = new Promise((resolve, reject) => {
 					
 					// Have selections changed?
@@ -209,23 +210,24 @@ export function activate(extensionContext?) {
 						let contentChange = event.contentChanges;
 						if (contentChange[0].text === ' ') {
 							// If the user presses space without typing anything, we need to resolve with a parameter and make sure to add back the tag names that were overwritten with a space
-							resolve({
-								"spaceInsertedAt": contentChange[1].range,
-								"initialSelections": initialSelections
-							});
+							const resolution: SpaceInsertedPromiseResolution = {
+								spaceInsertedAt: contentChange[1].range,
+								initialSelections: initialSelections
+							}
+							resolve(resolution);
 						}
 					});
 				});
-				return autoDeselectClosingTagAction.then((success) => {
+				return autoDeselectClosingTagAction.then((success: SpaceInsertedPromiseResolution) => {
 					//Cleanup memory and processes
 					workspaceListener.dispose();
 					windowListener.dispose();
 					
 					let newSelections = new Array<vscode.Selection>();
 					const spacePressedWithoutTypingNewTag = ():boolean => {
-						if ("spaceInsertedAt" in success) {
-							const initialSelections = success["initialSelections"];
-							const spaceInsertedAt = success["spaceInsertedAt"];
+						if (success.spaceInsertedAt) {
+							const initialSelections = success.initialSelections;
+							const spaceInsertedAt = success.spaceInsertedAt;
 
 							// Selections array is in the order user made selections (arbitrary), whereas the spaceInsertedAt (content-edit array) is in logical order, so we must loop to compare.
 							let returnValue: boolean;
