@@ -191,14 +191,8 @@ export function activate(extensionContext?) {
 				// Enter a mode to listen for whitespace and remove the second cursor
 				let workspaceListener: vscode.Disposable;
 				let windowListener: vscode.Disposable;
+
 				let autoDeselectClosingTagAction = new Promise((resolve, reject) => {
-					// Did user enter a space
-					workspaceListener = vscode.workspace.onDidChangeTextDocument((event)=> {
-						let textEntered = event.contentChanges[0].text;
-						if (textEntered === ' ') {
-							resolve('✔ User pressed space');
-						}
-					});
 					
 					// Have selections changed?
 					const initialSelections = editor.selections;			
@@ -209,6 +203,18 @@ export function activate(extensionContext?) {
 							resolve('✔ User changed selection. Event type: ' + event.kind);
 						}
 					});
+					
+					// Did user enter a space
+					workspaceListener = vscode.workspace.onDidChangeTextDocument((event)=> {
+						let contentChange = event.contentChanges;
+						if (contentChange[0].text === ' ') {
+							// If the user presses space without typing anything, we need to resolve with a parameter and make sure to add back the tag names that were overwritten with a space
+							resolve({
+								"spaceInsertedAt": contentChange[1].range,
+								"initialSelections": initialSelections
+							});
+						}
+					});
 				});
 				return autoDeselectClosingTagAction.then((success) => {
 					//Cleanup memory and processes
@@ -216,17 +222,47 @@ export function activate(extensionContext?) {
 					windowListener.dispose();
 					
 					let newSelections = new Array<vscode.Selection>();
+					const spacePressedWithoutTypingNewTag = ():boolean => {
+						if ("spaceInsertedAt" in success) {
+							const initialSelections = success["initialSelections"];
+							const spaceInsertedAt = success["spaceInsertedAt"];
+
+							// Selections array is in the order user made selections (arbitrary), whereas the spaceInsertedAt (content-edit array) is in logical order, so we must loop to compare.
+							let returnValue: boolean;
+							for (let i = 0; i < initialSelections.length; i++) {
+								if (spaceInsertedAt.isEqual(initialSelections[i])) {
+									returnValue = true;
+									//console.log('Selection[' + i + '] equal??? ' + returnValue);
+									break;
+								} else {
+									returnValue = false;
+								}
+							}
+							return returnValue;
+						}
+						else {
+							return false;
+						}
+					}
 					editor.edit((editBuilder) => {
 						// Update selections
 						const initialSelections = editor.selections;
 						let newLine: boolean = false;
 						let charOffset = 0;
+						const addMissingTag: boolean = spacePressedWithoutTypingNewTag();
 						for (const [index, selection] of initialSelections.entries()) {
+							let tagPosition: vscode.Position = selection.start;
 							if (index % 2 !== 0) {
 								// Remove whitespace on closing tag
 								// Since closing tag selection is now length zero and after the whitespace, select a range one character backwards
 								const closingTagWhitespace: vscode.Range = selection.with({start: selection.end.translate(0,-1), end: undefined});
 								editBuilder.delete(closingTagWhitespace);
+							} else {
+								tagPosition = selection.start.translate(undefined, -1);
+							}
+							if (addMissingTag) {
+								// If the user pressed space and overwrote the default tag with no tag, add the default tag before the space
+								editBuilder.insert(tagPosition, tag);
 							}
 						};
 					}, {
@@ -242,7 +278,7 @@ export function activate(extensionContext?) {
 						}
 					}).then(()=> {
 						editor.selections = newSelections;
-						console.log(success);
+						console.log('✔︎ Deselected closing tags');
 					});
 				});
 
