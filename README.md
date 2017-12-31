@@ -36,6 +36,25 @@ To open VS Code settings, click the "gear" icon ![Settings gear icon](images/set
  }
  ```
 
+### Keyboard shortcut
+If **htmltagwrap**'s keyboard shortcut conflicts with another command (i.e. `toggleFindWholeWord` on Windows/Linux or a command from another extension), here are 2 ways to resolve it...
+
+![Keyboard Shortcuts can be opened from the Global Actions button, which looks like a gear icon.](images/keybindinghtmltagwrap.png)
+#### 1) Change htmltagwrap's keyboard shortcut
+
+* Click on the gear icon on the bottom-left of VS Code and then on "Keyboard Shortcuts" (or find "Keyboard Shortcuts" from the command palette).
+* In the "Search Keybindings" text field, type "htmltagwrap" to see its current keybinding assignment.
+* Click on the pencil icon to edit this assignment.
+* Type whatever key or key combination you want (e.g. the `F7` key)
+
+*OR...*
+
+#### 2) Change the other keyboard shortcut(s)
+
+Do the same as above, except in the "Search Keybindings" text field copy and paste in `Alt+W` (Windows, Linux) or `⌥ w` (Mac) to find all the commands that conflict and make changes to their assignments.
+
+*See VS Code's [Keybindings](https://code.visualstudio.com/docs/getstarted/keybindings) doc for more info.*
+
 ## Known Issues
 When using the default setting `"htmltagwrap.autoDeselectClosingTag": true`:
 * If you undo and then redo wrapping, entering a space will not remove the selection on the closing tag as it normally would.
