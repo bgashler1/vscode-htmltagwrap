@@ -22,7 +22,7 @@ NOTE: This extension works best in files that either use tabs or spaces for inde
 ## Settings
 You can change the default behavior of htmltagwrap with the following settings.
 
-To open VS Code settings, click the "gear" icon ![Settings gear icon](images/settingsIcon.png) > then "Settings"
+To open VS Code settings, click the "gear" icon ![Global Actions button](images/settingsIcon.png) > then "Settings"
 
 ### Available settings
 * `htmltagwrap.tag` -  The default HTML tag to insert.
@@ -39,7 +39,7 @@ To open VS Code settings, click the "gear" icon ![Settings gear icon](images/set
 ### Keyboard shortcut
 If **htmltagwrap**'s keyboard shortcut conflicts with another command (i.e. `toggleFindWholeWord` on Windows/Linux or a command from another extension), here are 2 ways to resolve it...
 
-![Keyboard Shortcuts can be opened from the Global Actions button, which looks like a gear icon.](images/keybindinghtmltagwrap.png)
+![Keyboard Shortcuts can be opened from the Global Actions button](images/keybindinghtmltagwrap.png)
 #### 1) Change htmltagwrap's keyboard shortcut
 
 * Click on the gear icon on the bottom-left of VS Code and then on "Keyboard Shortcuts" (or find "Keyboard Shortcuts" from the command palette).
