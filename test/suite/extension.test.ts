@@ -6,14 +6,14 @@
 import {expect} from 'chai';
 import {workspace, window, Selection, Position, commands, extensions, Uri, TextEditor, Range, WorkspaceConfiguration} from 'vscode';
 import {copySync, CopyOptions, emptyDir} from 'fs-extra';
-import * as extension from '../src/extension';
+import * as extension from '../../src/extension';
 
 // A cursor selection is a StartPosition : EndPosition couple
 type CursorSelection = [Position, Position]; 
 
 extension.activate();
 let extensionID = 'bradgashler.htmltagwrap';
-let samplesFolder = extensions.getExtension(extensionID).extensionPath + '/test/sampleFiles/';
+let samplesFolder = extensions.getExtension(extensionID).extensionPath + '/test/suite/sampleFiles/';
 let tempFolder = samplesFolder + 'temp/';
 
 interface testOptions {

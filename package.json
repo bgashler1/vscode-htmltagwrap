@@ -42,12 +42,14 @@
 	},
 	"scripts": {
 		"vscode:prepublish": "tsc -p ./",
-		"compile": "tsc -watch -p ./",
+		"compile": "tsc -p ./",
+		"watch": "tsc -watch -p ./",
+		"lint": "eslint \"src/**/*.ts\"",
 		"typings": "typings",
-		"test:LinuxAndOSX": "node ./node_modules/vscode/bin/test"
+		"test:LinuxAndOSX": "node ./out/test/runTests.js"
 	},
 	"devDependencies": {
-		"@types/glob": "8.1.0",
+		"@types/glob": "^7.1.1",
 		"@types/node": "^16.11.7",
 		"@types/mocha": "^10.0.1",
 		"@types/vscode": "^1.75",
@@ -56,7 +58,7 @@
 		"@typescript-eslint/parser": "^5.56.0",
 		"chai": "^4.3.7",
 		"fs-extra": "^11.1.1",
-		"glob": "^9.3.2",
+		"glob":  "^7.1.1",
 		"mocha": "^10.2.0",
 		"eslint": "^8.36.0",
 		"source-map-support": "0.5.21",
