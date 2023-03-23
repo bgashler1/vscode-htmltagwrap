@@ -169,7 +169,7 @@ export function activate(extensionContext?) {
 						toSelect.push(new vscode.Selection(selection.start.line, startPosition, selection.start.line, startPosition + tag.length))
 						toSelect.push(new vscode.Selection(selection.end.line, endPosition, selection.end.line, endPosition + tag.length))
 					}
-					resolve();
+					resolve(null);
 					
 				}
 			}).then(() => {
@@ -183,7 +183,7 @@ export function activate(extensionContext?) {
 				console.log(selectionsPromiseFulfilled);
 				interface SpaceInsertedPromiseResolution {
 					spaceInsertedAt: vscode.Range;
-					initialSelections: vscode.Selection[];
+					initialSelections: readonly vscode.Selection[];
 				}
 				
 				if (!autoDeselectClosingTag) {

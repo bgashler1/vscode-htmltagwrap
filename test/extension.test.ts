@@ -67,7 +67,7 @@ function parametrizedMultiSelectionTest(startFilePath: string, expectedResultFil
 						rejected('failed to remove temporary tag setting for "helloworld"');
 					});
 				} else {
-					resolve();
+					resolve(null);
 				}
 			}).then(() => {
 				result = editor.document.getText();
