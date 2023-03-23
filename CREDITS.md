@@ -1,6 +1,7 @@
 Portions of this project include works or derivative works from the following
 
 [vscode-extension-samples](https://github.com/microsoft/vscode-extension-samples)
+Especially for the runTest script and adjacent code
 Copyright (c) Microsoft Corporation
 
 All rights reserved. 

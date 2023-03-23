@@ -1,4 +1,5 @@
 
+// From https://github.com/microsoft/vscode-extension-samples/blob/main/helloworld-test-sample/src/test/runTest.ts
 import * as path from 'path';
 
 import { runTests } from '@vscode/test-electron';
