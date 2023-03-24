@@ -99,19 +99,19 @@ suite('Extension Tests', function () {
 	
 	// Single selection tests
 	test('HTML with tabs block wrap test', function () {
-		return parametrizedSingleSelectionTest('tabFile.html', 'expectedTabBlockWrapFileResult.html', new Position(1, 1), new Position(6, 6), 'Tab using block wrap does not work');
+		return parametrizedSingleSelectionTest('tabFile.html', 'expectedTabBlockWrapFile.html', new Position(1, 1), new Position(6, 6), 'Tab using block wrap does not work');
 	});
 	test('HTML with spaces block wrap test', function () {
-		return parametrizedSingleSelectionTest('spaceFile.html', 'expectedSpaceBlockWrapFileResult.html', new Position(1, 4), new Position(7, 9), 'Space using block wrap does not work');
+		return parametrizedSingleSelectionTest('spaceFile.html', 'expectedSpaceBlockWrapFile.html', new Position(1, 4), new Position(7, 9), 'Space using block wrap does not work');
 	});
 	test('HTML with tabs line wrap test', function () {
-		return parametrizedSingleSelectionTest('tabFile.html', 'expectedTabLineWrapFileResult.html', new Position(2, 2), new Position(2, 11), 'Tab using line wrap does not work');
+		return parametrizedSingleSelectionTest('tabFile.html', 'expectedTabLineWrapFile.html', new Position(2, 2), new Position(2, 11), 'Tab using line wrap does not work');
 	});
 	test('HTML with spaces line wrap test', function () {
-		return parametrizedSingleSelectionTest('spaceFile.html', 'expectedSpaceLineWrapFileResult.html', new Position(2, 8), new Position(2, 17), 'Space using line wrap does not work');
+		return parametrizedSingleSelectionTest('spaceFile.html', 'expectedSpaceLineWrapFile.html', new Position(2, 8), new Position(2, 17), 'Space using line wrap does not work');
 	});
 	test('Empty selection line wrap test', function() {
-		return parametrizedSingleSelectionTest('emptyFile.html', 'expectedEmptyFileSingleCursorResult.html', new Position(0, 0), new Position(0, 0), 'Empty selection tag wrap does not work');
+		return parametrizedSingleSelectionTest('emptyFile.html', 'expectedEmptyFileSingleCursor.html', new Position(0, 0), new Position(0, 0), 'Empty selection tag wrap does not work');
 	});
 
 	// Multiple selecetion tests
@@ -121,7 +121,7 @@ suite('Extension Tests', function () {
 			[new Position(2, 0), new Position(2, 0)], 
 			[new Position(3, 0), new Position(3, 0)] 
 		];
-		return parametrizedMultiSelectionTest('emptySelectionMultipleCursors.html', 'expectedEmptySelectionMultipleCursorsResult.html', selections, 'Empty selection tag wrap does not work with multiple selections');
+		return parametrizedMultiSelectionTest('emptySelectionMultipleCursors.html', 'expectedEmptySelectionMultipleCursors.html', selections, 'Empty selection tag wrap does not work with multiple selections');
 	});
 
 	test('Multiple selections block wrap test', function() {
@@ -130,7 +130,7 @@ suite('Extension Tests', function () {
 			[new Position(5, 0), new Position(6, 13)], 
 			[new Position(10, 8), new Position(11, 15)] 
 		];
-		return parametrizedMultiSelectionTest('textBlocks.html', 'expectedMultiSelectionTextBlocksFileResult.html', selections, 'Multiple selections text block wrap does not work');
+		return parametrizedMultiSelectionTest('textBlocks.html', 'expectedMultiSelectionTextBlocksFile.html', selections, 'Multiple selections text block wrap does not work');
 	});
 
 	test('Multiple selections block wrap test', function() {
@@ -139,7 +139,7 @@ suite('Extension Tests', function () {
 			[new Position(5, 0), new Position(6, 13)], 
 			[new Position(10, 8), new Position(11, 15)] 
 		];
-		return parametrizedMultiSelectionTest('textBlocks.html', 'expectedMultiSelectionTextBlocksFileResult.html', selections, 'Multiple selections text block wrap does not work');
+		return parametrizedMultiSelectionTest('textBlocks.html', 'expectedMultiSelectionTextBlocksFile.html', selections, 'Multiple selections text block wrap does not work');
 	});
 
 	test('Multiple selections mix block / text wrap test', function() {
@@ -150,7 +150,7 @@ suite('Extension Tests', function () {
 			[new Position(10, 8), new Position(10, 19)],
 			[new Position(11, 11), new Position(11, 15)] 
 		];
-		return parametrizedMultiSelectionTest('textBlocks.html', 'expectedMultiSelectionMixedLineBlockFileResult.html', selections, 'Multiple selections mixed (text and block) does not work');
+		return parametrizedMultiSelectionTest('textBlocks.html', 'expectedMultiSelectionMixedLineBlockFile.html', selections, 'Multiple selections mixed (text and block) does not work');
 	});
 
 	test('Custom tag test', function() {
@@ -164,7 +164,7 @@ suite('Extension Tests', function () {
 		const options = {
 			customTag: true
 		};
-		return parametrizedMultiSelectionTest('textBlocks.html', 'expectedCustomTagFileResult.html', selections, 'Custom tag value "helloworld" does not work', options);
+		return parametrizedMultiSelectionTest('textBlocks.html', 'expectedCustomTag.html', selections, 'Custom tag value "helloworld" does not work', options);
 	});
 
 	test('Multiple same line selections (regression test)', function() {
@@ -178,7 +178,7 @@ suite('Extension Tests', function () {
 		const options = {
 			customTag: true
 		};
-		return parametrizedMultiSelectionTest('textBlocks.html', 'expectedMultipleSameLineSelectionsFileResult.html', selections, 'Multiple same line selections error. (regression)', options);
+		return parametrizedMultiSelectionTest('textBlocks.html', 'expectedMultipleSameLineSelectionsFile.html', selections, 'Multiple same line selections error. (regression)', options);
 	});
 
 
