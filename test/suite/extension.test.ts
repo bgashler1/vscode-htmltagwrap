@@ -12,9 +12,9 @@ import * as extension from '../../src/extension';
 type CursorSelection = [Position, Position]; 
 
 extension.activate();
-let extensionID = 'bradgashler.htmltagwrap';
-let samplesFolder = extensions.getExtension(extensionID).extensionPath + '/test/suite/sampleFiles/';
-let tempFolder = samplesFolder + 'temp/';
+const extensionID = 'bradgashler.htmltagwrap';
+const samplesFolder = extensions.getExtension(extensionID).extensionPath + '/test/suite/sampleFiles/';
+const tempFolder = samplesFolder + 'temp/';
 
 interface testOptions {
 	customTag?: boolean;
@@ -27,16 +27,20 @@ function parametrizedSingleSelectionTest(startFilePath: string, expectedResultFi
 }
 
 function parametrizedMultiSelectionTest(startFilePath: string, expectedResultFilePath: string, selections: Array<CursorSelection>, failMessage: string, options?: testOptions) {
+	// 
+	// This function is essentially the logic
+	// for both single and multi-selection tests
+	// 
 	let result: string;
 	let expectedResult: string;
 	let editor: any;
-	let workingFilePath = tempFolder + startFilePath;
+	const workingFilePath = tempFolder + startFilePath;
 	let tagWasUpdatedByTest: boolean;
 	const tagConfig = workspace.getConfiguration('htmltagwrap');
 
 	copySync(samplesFolder + startFilePath, workingFilePath, { clobber: true });
 
-	let testPromise = workspace.openTextDocument(workingFilePath).then((workingDocument) => {
+	const testPromise = workspace.openTextDocument(workingFilePath).then((workingDocument) => {
 		return window.showTextDocument(workingDocument);
 	}).then((_editor) => {
 		return new Promise(resolve => {
@@ -72,7 +76,7 @@ function parametrizedMultiSelectionTest(startFilePath: string, expectedResultFil
 			}).then(() => {
 				result = editor.document.getText();
 			},failure => {
-				console.error(failure)
+				console.error(failure);
 			});
 		}).then(() => {
 			return workspace.openTextDocument(samplesFolder + expectedResultFilePath);
@@ -159,7 +163,7 @@ suite('Extension Tests', function () {
 		];
 		const options = {
 			customTag: true
-		}
+		};
 		return parametrizedMultiSelectionTest('textBlocks.html', 'expectedCustomTagFileResult.html', selections, 'Custom tag value "helloworld" does not work', options);
 	});
 
@@ -173,7 +177,7 @@ suite('Extension Tests', function () {
 		];
 		const options = {
 			customTag: true
-		}
+		};
 		return parametrizedMultiSelectionTest('textBlocks.html', 'expectedMultipleSameLineSelectionsFileResult.html', selections, 'Multiple same line selections error. (regression)', options);
 	});
 
