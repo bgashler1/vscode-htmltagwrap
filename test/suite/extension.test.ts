@@ -1,6 +1,6 @@
 //
-// Note: This example test is leveraging the Mocha test framework.
-// Please refer to their documentation on https://mochajs.org/ for help.
+// Uses Mocha test framework.
+// Refer to their documentation on https://mochajs.org/ for help.
 //
 
 import {expect} from 'chai';
@@ -26,72 +26,48 @@ function parametrizedSingleSelectionTest(startFilePath: string, expectedResultFi
 	return parametrizedMultiSelectionTest(startFilePath, expectedResultFilePath, selections, failMessage);
 }
 
-function parametrizedMultiSelectionTest(startFilePath: string, expectedResultFilePath: string, selections: Array<CursorSelection>, failMessage: string, options?: testOptions) {
+async function parametrizedMultiSelectionTest(startFilePath: string, expectedResultFilePath: string, selections: Array<CursorSelection>, failMessage: string, options?: testOptions) {
 	// 
-	// This function is essentially the logic
-	// for both single and multi-selection tests
+	// This function is the core test logic
 	// 
-	let result: string;
-	let expectedResult: string;
-	let editor: any;
 	const workingFilePath = tempFolder + startFilePath;
 	let tagWasUpdatedByTest: boolean;
 	const tagConfig = workspace.getConfiguration('htmltagwrap');
 
 	copySync(samplesFolder + startFilePath, workingFilePath, { clobber: true });
 
-	const testPromise = workspace.openTextDocument(workingFilePath).then((workingDocument) => {
-		return window.showTextDocument(workingDocument);
-	}).then((_editor) => {
-		return new Promise(resolve => {
-			editor = _editor;
-			if (options) {
-				tagConfig.update('tag','helloworld', true).then(success => {
-					tagWasUpdatedByTest = true;
-					resolve('✔ Updated tag to "helloworld"');
-				}, rejected => {
-					rejected('failed to update tag to "helloworld"');
-				});
-			}
-			else {
-				resolve('No need to update tag');
-			}
-		}).then(success => {
-			editor.selections = selections.map(s => new Selection(s[0], s[1]));
-			return commands.executeCommand('extension.htmlTagWrap').then(() => new Promise((f) => setTimeout(f, 500)));
-		}, failure => {
-			console.error(failure);
-		}).then(() => {
-			return new Promise(resolve => {
-				if (tagWasUpdatedByTest) {
-					tagConfig.update('tag', undefined, true).then(success => {
-						resolve('✔ Removed temporary tag setting for "helloworld" tag');
-						tagWasUpdatedByTest = false;
-					}, rejected => {
-						rejected('failed to remove temporary tag setting for "helloworld"');
-					});
-				} else {
-					resolve(null);
-				}
-			}).then(() => {
-				result = editor.document.getText();
-			},failure => {
-				console.error(failure);
-			});
-		}).then(() => {
-			return workspace.openTextDocument(samplesFolder + expectedResultFilePath);
-		}).then((expectedResultDocument: any) => {
-			expectedResult = expectedResultDocument.getText();
-		}).then(() => {
-			return commands.executeCommand('workbench.action.closeActiveEditor').then(() => new Promise((f) => setTimeout(f, 500)));
+	const workingDocument = await workspace.openTextDocument(workingFilePath);
+	const editor = await window.showTextDocument(workingDocument);
+	if (options) {
+		const tag = 'helloworld';
+		await tagConfig.update('tag',tag, true).then(success => {
+			tagWasUpdatedByTest = true;
+			console.log(`✔ Updated tag to ${tag}`);
+		}, rejected => {
+			throw new Error(`failed to update custom tag to ${tag}`);
 		});
-	});
+	}
+	editor.selections = selections.map(s => new Selection(s[0], s[1]));
+	await commands.executeCommand('extension.htmlTagWrap');
+	await new Promise((resolve) => setTimeout(resolve, 500));
+	
+	if (tagWasUpdatedByTest) {
+		try {
+			await tagConfig.update('tag', undefined, true);
+			tagWasUpdatedByTest = false;
+		} catch(error) {
+			throw new Error('Failed to remove temporary custom tag setting: ' + error);
+		}
+	}
+	const result = editor.document.getText();
+	const expectedResultDocument = await workspace.openTextDocument(samplesFolder + expectedResultFilePath);
+	const expectedResult = expectedResultDocument.getText();
+	await commands.executeCommand('workbench.action.closeActiveEditor');
+	await new Promise((f) => setTimeout(f, 500));
 
-	return testPromise.then(() => {
-		expect(result).not.to.be.equal(undefined, 'File loding error');
-		expect(expectedResult).not.to.be.equal(undefined, 'File loding error');
-		expect(result).to.be.equal(expectedResult, failMessage);
-	});
+	expect(result).not.to.be.equal(undefined, 'File loding error');
+	expect(expectedResult).not.to.be.equal(undefined, 'File loding error');
+	expect(result).to.be.equal(expectedResult, failMessage);
 }
 
 
