@@ -13,7 +13,7 @@ function getTabString(editor: vscode.TextEditor): string {
 }
 
 // this method is called when your extension is activated
-export function activate(extensionContext?) {
+export function activate(extensionContext?: vscode.ExtensionContext) {
 
 	// The command has been defined in the package.json file
 	// Now provide the implementation of the command with  registerCommand
