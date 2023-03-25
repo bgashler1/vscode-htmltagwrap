@@ -18,6 +18,7 @@ const tempFolder = samplesFolder + 'temp/';
 
 interface testOptions {
 	customTag?: boolean;
+	autoDeselectClosingTag?: boolean;
 }
 function parametrizedSingleSelectionTest(startFilePath: string, expectedResultFilePath: string, selectionStart: Position, selectionEnd: Position, failMessage: string) {
 	const selection:CursorSelection = [selectionStart, selectionEnd];
@@ -38,7 +39,13 @@ async function parametrizedMultiSelectionTest(startFilePath: string, expectedRes
 
 	const workingDocument = await workspace.openTextDocument(workingFilePath);
 	const editor = await window.showTextDocument(workingDocument);
-	if (options) {
+
+	if (options?.autoDeselectClosingTag !== true) {
+		// Except for tests that simulate autoDeslectClosingTag, disable this to prevent error spam
+		await tagConfig.update('autoDeselectClosingTag', false, true);
+	}
+	
+	if (options?.customTag === true) {
 		const tag = 'helloworld';
 		await tagConfig.update('tag',tag, true).then(success => {
 			tagWasUpdatedByTest = true;
