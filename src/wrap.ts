@@ -1,5 +1,5 @@
 import { window, workspace, TextEditor, Position, Selection } from 'vscode';
-import { getTag, getTabString } from './utilities';
+import { getTabString } from './utilities';
 
 /*
 First, temporarily leave tags empty if they start/end on the same line to work around VS Code's default setting `html.autoClosingTags,`.
@@ -7,14 +7,14 @@ This setting would autocloses these opening tags if they come with element names
 */
 const openingTags: string = '<' + '>';
 const closingTags: string = '</' + '>';
-const tag = getTag();
 
-export async function wrapInTagsAndSelect(editor:TextEditor) {
-    const tagsMissingElements = await wrapInEmptyTags(editor);
-    await selectAndAddTags(editor, tagsMissingElements);
+export async function wrapInTagsAndSelect(editor:TextEditor, tag: string) {
+    
+    const tagsMissingElements = await wrapInEmptyTags(editor, tag);
+    await selectAndAddTags(editor, tag, tagsMissingElements);
 }
 
-async function wrapInEmptyTags (editor: TextEditor) {
+async function wrapInEmptyTags (editor: TextEditor, tag) {
 	const tagsMissingElements: Array<number> = [];
     // Start inserting tags
     const tabSizeSpace = getTabString(editor);
@@ -66,7 +66,7 @@ async function wrapInEmptyTags (editor: TextEditor) {
     return tagsMissingElements;
 }
 
-async function selectAndAddTags (editor, tagsMissingElements) {
+async function selectAndAddTags (editor, tag, tagsMissingElements) {
     const tabSizeSpace = getTabString(editor);
     // Add tag name elements
     // Need to fetch selections again as they are no longer accurate
