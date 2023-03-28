@@ -94,7 +94,6 @@ async function selectAndAddTags (editor: TextEditor, tag: string, tagsMissingEle
             undoStopBefore: false,
             undoStopAfter: true
         });
-        console.log('Edit applied!');
     }
     catch (err) {
         console.error('Element name insertion rejected! ', err);
