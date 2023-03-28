@@ -1,7 +1,7 @@
-import { window, ExtensionContext } from 'vscode';
+import { window, workspace, ExtensionContext, TextEditor } from 'vscode';
 
 
-export default function announceNotableUpdate (extensionContext: ExtensionContext) {
+export function announceNotableUpdate (extensionContext: ExtensionContext) {
     // Announce notable changes. Update the `lastNotableUpdate` to current version to announce. Use sparingly.
     if (extensionContext) {
         // Prevents tests from breaking
@@ -13,4 +13,21 @@ export default function announceNotableUpdate (extensionContext: ExtensionContex
             console.log('lastUpdateSeen = ', extensionContext.globalState.get('lastUpdateSeen'));
         }
     }
+}
+
+export function getTag() {
+    const tagSetting = workspace.getConfiguration().get<string>("htmltagwrap.tag");
+    if (!tagSetting) {
+        return 'p'; 
+    }
+    return tagSetting;
+}
+
+export function getTabString(editor: TextEditor): string {
+	const spacesUsed = <boolean>editor.options.insertSpaces;
+	if (spacesUsed) {
+		const numOfUsedSpaces = <number>editor.options.tabSize;
+		return ' '.repeat(numOfUsedSpaces);
+	}
+	return '\t';
 }
