@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import announceNotableUpdate from './utilities';
 
 function getTabString(editor: vscode.TextEditor): string {
 	const spacesUsed = <boolean>editor.options.insertSpaces;
@@ -12,27 +13,16 @@ function getTabString(editor: vscode.TextEditor): string {
 
 export function activate(extensionContext?: vscode.ExtensionContext) {
 
-	// The command's name is pre-declared in package.json
 	vscode.commands.registerCommand('extension.htmlTagWrap', async () => {
 		// Code in this function runs each time extension is activated
+		// The command's name is pre-declared in package.json
 
 		const editor = vscode.window.activeTextEditor;
 		const tabSizeSpace = getTabString(editor);
 
-		if(editor == null) {
-			return;
-		}
+		if(editor == null) return;
 
-		if (extensionContext) {
-			// Prevents tests from breaking
-			const currentUpdate = '0.0.7';
-			const hasUserSeenCurrentUpdateMessage: boolean = extensionContext.globalState.get('lastUpdateSeen') === currentUpdate ? true : false;
-			if (!hasUserSeenCurrentUpdateMessage) {
-				vscode.window.showInformationMessage('htmltagwrap now supports adding attributes on opening tags');
-				extensionContext.globalState.update('lastUpdateSeen', currentUpdate);
-				console.log('lastUpdateSeen = ', extensionContext.globalState.get('lastUpdateSeen'));
-			}
-		}
+		announceNotableUpdate(extensionContext);
 
 		/*
 		First, temporarily leave tags empty if they start/end on the same line to work around VS Code's default setting `html.autoClosingTags,`.
