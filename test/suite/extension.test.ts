@@ -90,7 +90,6 @@ async function parametrizedMultiSelectionTest(startFilePath: string, expectedRes
 
 
 suite('Extension Tests', function () {
-	/*
 	// Single selection tests
 	test('HTML with tabs block wrap test', function () {
 		return parametrizedSingleSelectionTest('tabFile.html', 'expectedTabBlockWrapFile.html', new Position(1, 1), new Position(6, 6), 'Tab using block wrap does not work');
@@ -174,7 +173,6 @@ suite('Extension Tests', function () {
 		};
 		return parametrizedMultiSelectionTest('textBlocks.html', 'expectedMultipleSameLineSelectionsFile.html', selections, 'Multiple same line selections error. (regression)', options);
 	});
-	*/
 	test('Press spacebar (autoDeslect enabled)', function() {
 		// TODO: improve this by using VS Code `Selection[]` instead (maybe a `map` to generate them with `new Selection()`)
 		// Then use the `.with(start: Position)` method to offset them perhaps?
@@ -223,7 +221,7 @@ suite('Extension Tests', function () {
 		}
 		return parametrizedMultiSelectionTest('textBlocks.html', 'expectedAutoDeselect_DefaultTag.html', selections, 'Garbled text after pressing spacebar with default tag', options);
 	});
-
+	
 	/*
 	test('Modify tag, then press spacebar (autoDeslect enabled)', function() {
 		const selections: Array<CursorSelection> = [ 
