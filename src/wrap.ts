@@ -145,8 +145,9 @@ async function selectAndAddTags (editor, tag, tagsMissingElements) {
     });
     await new Promise(resolve => {
         editor.selections = toSelect;
-        window.onDidChangeTextEditorSelection((event)=> {
+        const watcher = window.onDidChangeTextEditorSelection((event)=> {
             resolve('✔ Selections updated');
+            watcher.dispose();
         });
     });
 }
