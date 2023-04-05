@@ -1,5 +1,8 @@
 import * as vscode from 'vscode';
+
 export interface SpaceInsertedPromiseResolution {
-    spaceInsertedAt: vscode.Range;
-    initialSelections: readonly vscode.Selection[];
+    passedSelections: readonly vscode.Selection[];
+    spaceInsertedAt: vscode.Range[];
 }
+
+export type RangeIndexList = Array<number>;

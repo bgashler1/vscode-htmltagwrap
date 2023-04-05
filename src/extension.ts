@@ -14,11 +14,11 @@ export function activate(extensionContext?: vscode.ExtensionContext) {
 		announceNotableUpdate(extensionContext);
 		
 		const tag = getTag();
-		await wrapInTagsAndSelect(editor, tag);
+		const passedSelections = await wrapInTagsAndSelect(editor, tag);
 
 		const isEnabledAutodeselectClosingTag = vscode.workspace.getConfiguration().get<boolean>("htmltagwrap.autoDeselectClosingTag");
 		if (!isEnabledAutodeselectClosingTag) return;
-		await autoDeselectClosingTag(editor);
+		await autoDeselectClosingTag(editor, passedSelections);
 	});
 	extensionContext?.subscriptions.push(disposable);
 }

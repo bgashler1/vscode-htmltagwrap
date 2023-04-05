@@ -1,5 +1,6 @@
 import { window, workspace, TextEditor, Position, Selection } from 'vscode';
 import { getTabString } from './utilities';
+import { RangeIndexList } from './types';
 
 /*
 First, temporarily leave tags empty if they start/end on the same line to work around VS Code's default setting `html.autoClosingTags,`.
@@ -9,13 +10,12 @@ const openingTags: string = '<' + '>';
 const closingTags: string = '</' + '>';
 
 export async function wrapInTagsAndSelect(editor:TextEditor, tag: string) {
-    
     const tagsMissingElements = await wrapInEmptyTags(editor, tag);
-    await selectAndAddTags(editor, tag, tagsMissingElements);
+    return await selectAndAddTags(editor, tag, tagsMissingElements);
 }
 
 async function wrapInEmptyTags (editor: TextEditor, tag) {
-	const tagsMissingElements: Array<number> = [];
+	const tagsMissingElements: RangeIndexList = [];
     // Start inserting tags
     const tabSizeSpace = getTabString(editor);
 	await editor.edit((editBuilder) => {
@@ -66,7 +66,7 @@ async function wrapInEmptyTags (editor: TextEditor, tag) {
     return tagsMissingElements;
 }
 
-async function selectAndAddTags (editor, tag, tagsMissingElements) {
+async function selectAndAddTags (editor: TextEditor, tag: string, tagsMissingElements: RangeIndexList): Promise<readonly Selection[]> {
     const tabSizeSpace = getTabString(editor);
     // Add tag name elements
     // Need to fetch selections again as they are no longer accurate
@@ -143,10 +143,16 @@ async function selectAndAddTags (editor, tag, tagsMissingElements) {
             
         }
     });
-    await new Promise(resolve => {
+    return await new Promise((resolve, reject) => {
         editor.selections = toSelect;
         const watcher = window.onDidChangeTextEditorSelection((event)=> {
-            resolve('✔ Selections updated');
+            event.selections.forEach((selection, i) => {
+                if (!selection.isEqual(toSelect[i])) {
+                    console.error('Selections were not updated as extension expected');
+                    reject('Selections not updated');
+                }
+            });
+            resolve(editor.selections);
             watcher.dispose();
         });
     });
