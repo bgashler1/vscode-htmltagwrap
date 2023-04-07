@@ -6,6 +6,8 @@
 		"url": "https://github.com/bgashler1/vscode-htmltagwrap"
 	},
 	"description": "Wraps selected code with HTML tags",
+	"categories": ["Other"],
+	"keywords": ["wrap tags", "wrap html", "wrap code", "wrap text"],
 	"version": "0.0.8",
 	"publisher": "bradgashler",
 	"engines": {
@@ -40,6 +42,7 @@
 			}
 		}
 	},
+	"activationEvents": ["onCommand"],
 	"scripts": {
 		"vscode:prepublish": "tsc -p ./",
 		"compile": "tsc -p ./",
@@ -52,7 +55,7 @@
 		"@types/glob": "^7.1.1",
 		"@types/node": "^16.11.7",
 		"@types/mocha": "^10.0.1",
-		"@types/vscode": "^1.75",
+		"@types/vscode": "^1.7.5",
 		"@vscode/test-electron": "^2.3.0",
 		"@typescript-eslint/eslint-plugin": "^5.56.0",
 		"@typescript-eslint/parser": "^5.56.0",

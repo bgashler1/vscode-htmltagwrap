@@ -4,3 +4,4 @@ typings
 test/suite/sampleFiles/temp
 .vscode-test
 .DS_Store
+*.vsix
