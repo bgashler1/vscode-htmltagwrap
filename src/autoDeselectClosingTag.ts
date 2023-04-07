@@ -38,10 +38,11 @@ export async function autoDeselectClosingTag (editor: TextEditor, passedSelectio
 					// Remove whitespace on closing tag
 					editBuilder.delete(selectionsAfterEvent.spaceInsertedAt[i]);
 				}
-				const wasSpacePressedWithoutTypingNewTag = selectionsAfterEvent.spaceInsertedAt && selectionsAfterEvent.passedSelections.length === 1;
-				if (wasSpacePressedWithoutTypingNewTag === true) {
-					// If the user pressed space and overwrote the default tag with no tag, add the default tag before the space
-					editBuilder.insert(selectionsAfterEvent.passedSelections[i].end, tag);
+				const sampleSelection = selectionsAfterEvent.passedSelections[0];
+				const wasSpacebarPressedWithoutChangingTag = selectionsAfterEvent.spaceInsertedAt[0].isEqual(sampleSelection);
+				if (wasSpacebarPressedWithoutChangingTag === true) {
+					// Restore the tag that was overwritten by pressing spacebar while the tags were selected
+					editBuilder.insert(selectionsAfterEvent.passedSelections[i].start, tag);
 				}
 			}
 		}, {
