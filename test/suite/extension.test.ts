@@ -16,7 +16,7 @@ const extensionID = 'bradgashler.htmltagwrap';
 const samplesFolder = extensions.getExtension(extensionID).extensionPath + '/test/suite/sampleFiles/';
 const tempFolder = samplesFolder + 'temp/';
 
-interface testOptions {
+interface testOptions{
 	customTag?: boolean;
 	autoDeselectClosingTag?: boolean;
 }
