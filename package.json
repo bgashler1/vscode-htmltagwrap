@@ -8,7 +8,7 @@
 	"description": "Wraps selected code with HTML tags",
 	"categories": ["Other"],
 	"keywords": ["wrap tags", "wrap html", "wrap code", "wrap text"],
-	"version": "0.0.8",
+	"version": "0.0.9",
 	"publisher": "bradgashler",
 	"engines": {
 		"vscode": "^1.7.5"

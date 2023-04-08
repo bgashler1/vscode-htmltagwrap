@@ -163,6 +163,13 @@ suite('Extension Tests', function () {
 		};
 		return parametrizedMultiSelectionTest('textBlocks.html', 'expectedMultipleSameLineSelectionsFile.html', selections, 'Multiple same line selections error. (regression)', options);
 	});
+	
+	test('Block selection ends on blank line (Issue #22)', function() {
+		const selections: Array<CursorSelection> = [ 
+			[new Position(0, 0), new Position(3, 0)],
+		];
+		return parametrizedMultiSelectionTest('blockSelectionBlankLastLine.html', 'expectedBlockSelectionBlankLastLine.html', selections, 'See issue #22 (regression)');
+	});
 
 
 	teardown((done) => emptyDir(tempFolder, done));

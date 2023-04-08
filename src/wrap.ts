@@ -35,9 +35,9 @@ async function wrapInEmptyTags (editor: TextEditor, tag) {
 
 				const selectionStart_spaces = editor.document.lineAt(selectionStart.line).text.substring(0, selectionStart.character);
 				
-				// Modify last line of selection
-				editBuilder.insert(new Position(selectionEnd.line, selectionEnd.character), '\n' + selectionStart_spaces + '</' + tag + '>');
+				// Modify last line of selection (start from bottom, so changes don't impact position accuracy downward)
 				editBuilder.insert(new Position(selectionEnd.line, 0), tabSizeSpace);
+				editBuilder.insert(new Position(selectionEnd.line, selectionEnd.character), '\n' + selectionStart_spaces + '</' + tag + '>');
 
 
 				for (let lineNumber = selectionEnd.line - 1; lineNumber > selectionStart.line; lineNumber--) {
