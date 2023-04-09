@@ -65,10 +65,3 @@ I haven't found good solutions to these issues using the current extension API.
 ## Contributing
 Please create an issue on GitHub if you experience a bug.
 I also welcome pull requests.
-
-## Recent Updates
-### 0.0.7
-* After wrapping, you can add attributes to just the opening tags.
-* Upon `spacebar` press, cursors in the closing tags go away.
-
-(see previous updates in the changelog)
