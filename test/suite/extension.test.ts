@@ -11,7 +11,6 @@ import * as extension from '../../src/extension';
 // A cursor selection is a StartPosition : EndPosition couple
 type CursorSelection = [Position, Position]; 
 
-extension.activate();
 const extensionID = 'bradgashler.htmltagwrap';
 const samplesFolder = extensions.getExtension(extensionID).extensionPath + '/test/suite/sampleFiles/';
 const tempFolder = samplesFolder + 'temp/';
