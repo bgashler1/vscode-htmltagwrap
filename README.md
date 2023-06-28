@@ -1,8 +1,4 @@
-# vscode-htmltagwrap
-[![Build Status](https://travis-ci.org/bgashler1/vscode-htmltagwrap.svg?branch=master)](https://travis-ci.org/bgashler1/vscode-htmltagwrap)
-
-## What is it
-Wraps your selection in HTML tags.  Can wrap inline selections and selections that span multiple lines (works with both single selections and multiple selections at once).
+Htmltagwrap wraps your text selection in HTML tags.  It can wrap inline selections and selections that span multiple lines (works with both single selections and multiple selections at once).
 
 To use, select one or many chunks of code and press **"Alt + W" ("Option + W" for Mac).**
 
