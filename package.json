@@ -6,8 +6,15 @@
 		"url": "https://github.com/bgashler1/vscode-htmltagwrap"
 	},
 	"description": "Wraps selected code with HTML tags",
-	"categories": ["Other"],
-	"keywords": ["wrap tags", "wrap html", "wrap code", "wrap text"],
+	"categories": [
+		"Other"
+	],
+	"keywords": [
+		"wrap tags",
+		"wrap html",
+		"wrap code",
+		"wrap text"
+	],
 	"version": "0.0.9",
 	"publisher": "bradgashler",
 	"engines": {
@@ -15,16 +22,20 @@
 	},
 	"main": "./out/src/extension",
 	"contributes": {
-		"commands": [{
+		"commands": [
+			{
 				"command": "extension.htmlTagWrap",
 				"title": "Wrap in HTML Tags"
-		}],
-		"keybindings": [{
+			}
+		],
+		"keybindings": [
+			{
 				"command": "extension.htmlTagWrap",
 				"key": "alt+w",
 				"mac": "alt+w",
 				"when": "editorTextFocus"
-		}],
+			}
+		],
 		"configuration": {
 			"type": "object",
 			"title": "Htmltagwrap configuration",
@@ -42,7 +53,9 @@
 			}
 		}
 	},
-	"activationEvents": ["onCommand"],
+	"activationEvents": [
+		"onCommand"
+	],
 	"scripts": {
 		"vscode:prepublish": "tsc -p ./",
 		"compile": "tsc -p ./",
@@ -61,7 +74,7 @@
 		"@typescript-eslint/parser": "^5.56.0",
 		"chai": "^4.3.7",
 		"fs-extra": "^11.1.1",
-		"glob":  "^7.1.1",
+		"glob": "^7.1.1",
 		"mocha": "^10.2.0",
 		"eslint": "^8.36.0",
 		"source-map-support": "0.5.21",
