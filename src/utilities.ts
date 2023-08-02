@@ -8,7 +8,7 @@ export function announceNotableUpdate (extensionContext: ExtensionContext) {
         const lastNotableUpdate = '0.0.7';
         const hasUserSeenCurrentUpdateMessage: boolean = extensionContext.globalState.get('lastUpdateSeen') === lastNotableUpdate ? true : false;
         if (!hasUserSeenCurrentUpdateMessage) {
-            window.showInformationMessage('htmltagwrap now supports adding attributes on opening tags');
+            window.showInformationMessage('Multiple Htmltagwrap bugfixes have landed. `Auto deselect` closing tags on spacebar press is working again.');
             extensionContext.globalState.update('lastUpdateSeen', lastNotableUpdate);
             console.log('lastUpdateSeen = ', extensionContext.globalState.get('lastUpdateSeen'));
         }
