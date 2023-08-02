@@ -53,9 +53,7 @@
 			}
 		}
 	},
-	"activationEvents": [
-		"onCommand"
-	],
+	"activationEvents": ["onCommand:extension.htmlTagWrap"],
 	"scripts": {
 		"vscode:prepublish": "tsc -p ./",
 		"compile": "tsc -p ./",
