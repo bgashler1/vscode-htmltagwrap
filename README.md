@@ -5,7 +5,9 @@ To use, select one or many chunks of code and press **"Alt + W" ("Option + W" fo
 
 ![Demo of a user wrapping an inline selection in span tags, followed by the user wrapping a block of text in div tags and lastly wrapping 2 different lines at once in paragraph tags](images/screenshot.gif)
 
-[Download it on the Visual Studio Marketplace](https://marketplace.visualstudio.com/items/bradgashler.htmltagwrap)
+[Download for Visual Studio Code](https://marketplace.visualstudio.com/items/bradgashler.htmltagwrap)
+or
+[other editors (via Open VSX)](https://open-vsx.org/extension/bradgashler/htmltagwrap)
 
 ## How to Use It
 * Select one or more blocks of text or strings of text.
