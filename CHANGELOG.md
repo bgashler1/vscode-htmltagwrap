@@ -1,4 +1,7 @@
 # Changelog
+## **[1.0.0]** - 2023-8-1
+Fixed the `command 'extension.htmlTagWrap' not found` error for people using VS Code versions that were released before January 2023. Backwards compatibility restored for VS Code versions 1.7.5+ (Oct 2016 and later).
+
 ## **[0.0.9]** - 2023-4-8
 Bugfix: no more garbled closing tags when you start typing tag attributes after pressing spacebar (with `htmltagwrap.autoDeselectClosingTag` set to true, the default setting).
 

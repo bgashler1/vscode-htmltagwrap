@@ -15,7 +15,7 @@
 		"wrap code",
 		"wrap text"
 	],
-	"version": "0.0.9",
+	"version": "1.0.0",
 	"publisher": "bradgashler",
 	"engines": {
 		"vscode": "^1.7.5"
