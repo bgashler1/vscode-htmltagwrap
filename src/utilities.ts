@@ -18,7 +18,7 @@ export function announceNotableUpdate (extensionContext: ExtensionContext) {
 export function getTag() {
     // You must call this within a function scope, not globally, or else it will not be updated if a test updates it programmatically.
     const tagSetting = workspace.getConfiguration().get<string>("htmltagwrap.tag");
-    if (!tagSetting) {
+    if (tagSetting === undefined) {
         return 'p'; 
     }
     return tagSetting;
