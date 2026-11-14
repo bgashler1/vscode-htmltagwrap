@@ -30,6 +30,10 @@
 			{
 				"command": "extension.htmlTagWrapBlock",
 				"title": "Wrap in HTML Tags with New Lines"
+			},
+			{
+				"command": "extension.htmlTagWrapSnippet",
+				"title": "Wrap with Saved Snippet"
 			}
 		],
 		"keybindings": [
@@ -43,6 +47,12 @@
 				"command": "extension.htmlTagWrapBlock",
 				"key": "shift+alt+w",
 				"mac": "shift+alt+w",
+				"when": "editorTextFocus"
+			},
+			{
+				"command": "extension.htmlTagWrapSnippet",
+				"key": "shift+alt+s",
+				"mac": "shift+alt+s",
 				"when": "editorTextFocus"
 			}
 		],
@@ -59,13 +69,28 @@
 					"type": "boolean",
 					"default": true,
 					"description": "Automatically deselect the closing tag after inserting a space."
+				},
+				"htmltagwrap.snippets": {
+					"type": "array",
+					"default": [],
+					"description": "Named before/after fragments for Wrap with Saved Snippet.",
+					"items": {
+						"type": "object",
+						"required": ["name", "before", "after"],
+						"properties": {
+							"name": { "type": "string" },
+							"before": { "type": "string" },
+							"after": { "type": "string" }
+						}
+					}
 				}
 			}
 		}
 	},
 	"activationEvents": [
 		"onCommand:extension.htmlTagWrap",
-		"onCommand:extension.htmlTagWrapBlock"
+		"onCommand:extension.htmlTagWrapBlock",
+		"onCommand:extension.htmlTagWrapSnippet"
 	],
 	"scripts": {
 		"vscode:prepublish": "tsc -p ./",

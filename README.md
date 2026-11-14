@@ -16,6 +16,8 @@ or
 
 Press <kbd>Shift</kbd> + <kbd>Alt</kbd> + <kbd>W</kbd> (or <kbd>Shift</kbd> + <kbd>Option</kbd> + <kbd>W</kbd> on Mac) to place the opening tag, selected content, and closing tag on separate lines.
 
+Press <kbd>Shift</kbd> + <kbd>Alt</kbd> + <kbd>S</kbd> (or <kbd>Shift</kbd> + <kbd>Option</kbd> + <kbd>S</kbd> on Mac) to choose a saved wrap snippet. Each snippet inserts its `before` and `after` fragments around every selection.
+
 By default, pressing spacebar will deselect the closing tags, so you can add attributes to the opening tags (you can turn this feature off, see below). If nothing is selected when you run htmltagwrap, it will add an opening and closing tag at the cursor position.
 
 NOTE: This extension works best in files that either use tabs or spaces for indentation.  It may not work as well with mixed tabs/spaces.
@@ -28,6 +30,16 @@ To open VS Code settings, click the "gear" icon ![Global Actions button](images/
 ### Available settings
 * `htmltagwrap.tag` -  The default HTML tag to insert. You can include attributes, such as `code translate="no"`; attributes are added only to the opening tag.
 * `htmltagwrap.autoDeselectClosingTag` -  Automatically deselect the closing tag after inserting a space.
+* `htmltagwrap.snippets` - Named `before` and `after` fragments. Either fragment may be empty, and both may contain newlines.
+
+For example:
+
+```json
+"htmltagwrap.snippets": [
+  { "name": "Comment", "before": "<!-- ", "after": " -->" },
+  { "name": "Details", "before": "<details>\n<summary>More</summary>\n", "after": "\n</details>" }
+]
+```
 
 ### Defaults
  ```
