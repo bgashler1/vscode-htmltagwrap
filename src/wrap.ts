@@ -1,4 +1,4 @@
-import { TextEditor, Position, Selection } from 'vscode';
+import { TextEditor, Position, Selection, Range, EndOfLine } from 'vscode';
 import { getTabString } from './utilities';
 import { RangeIndexList } from './types';
 
@@ -12,6 +12,56 @@ const closingTags: string = '</' + '>';
 export async function wrapInTagsAndSelect(editor:TextEditor, tag: string, attributes = '') {
     const tagsMissingElements = await wrapInEmptyTags(editor, tag, attributes);
     return await selectAndAddTags(editor, tag, attributes, tagsMissingElements);
+}
+
+export async function wrapInBlockTagsAndSelect(editor: TextEditor, tag: string, attributes = ''): Promise<readonly Selection[]> {
+	const document = editor.document;
+	const indentation = getTabString(editor);
+	const eol = document.eol === EndOfLine.CRLF ? '\r\n' : '\n';
+	const plans = editor.selections.map(selection => {
+		const firstLine = document.lineAt(selection.start.line);
+		const leadingIndent = firstLine.text.substring(0, firstLine.firstNonWhitespaceCharacterIndex);
+		let start = selection.start;
+		let end = selection.end;
+		if (start.character === 0 && leadingIndent && (end.line > start.line || end.character === firstLine.text.length)) {
+			start = new Position(start.line, leadingIndent.length);
+		}
+		if (end.line > start.line && end.character === 0) {
+			end = document.lineAt(end.line - 1).range.end;
+		}
+		const range = new Range(start, end);
+		const selectedText = document.getText(range);
+		const inner = selectedText.split(/\r?\n/).map((line, index) => {
+			return index === 0 ? leadingIndent + indentation + line : indentation + line;
+		}).join(eol);
+		const prefix = '<' + tag + attributes + '>' + eol;
+		const suffix = eol + leadingIndent + '</' + tag + '>';
+		const offset = document.offsetAt(start);
+		const endOffset = document.offsetAt(end);
+		return {
+			range, offset, endOffset,
+			replacement: prefix + inner + suffix,
+			openingName: offset + 1,
+			closingName: offset + prefix.length + inner.length + eol.length + leadingIndent.length + 2
+		};
+	});
+	const applied = await editor.edit(editBuilder => {
+		for (const plan of plans) editBuilder.replace(plan.range, plan.replacement);
+	});
+	if (!applied) return editor.selections;
+	const shiftBefore = (offset: number) => plans.filter(plan => plan.endOffset <= offset && plan.offset < offset)
+		.reduce((shift, plan) => shift + plan.replacement.length - (plan.endOffset - plan.offset), 0);
+	const selections: Selection[] = [];
+	for (const plan of plans) {
+		const shift = shiftBefore(plan.offset);
+		const openingStart = document.positionAt(plan.openingName + shift);
+		const openingEnd = document.positionAt(plan.openingName + shift + tag.length);
+		const closingStart = document.positionAt(plan.closingName + shift);
+		const closingEnd = document.positionAt(plan.closingName + shift + tag.length);
+		selections.push(new Selection(openingStart, openingEnd), new Selection(closingStart, closingEnd));
+	}
+	editor.selections = selections;
+	return editor.selections;
 }
 
 async function wrapInEmptyTags (editor: TextEditor, tag: string, attributes: string) {

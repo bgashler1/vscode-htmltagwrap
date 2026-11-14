@@ -14,6 +14,8 @@ or
 * Press <kbd>Alt</kbd> + <kbd>W</kbd> or <kbd>Option</kbd> + <kbd>W</kbd> for Mac.
 * Type the tag name you want.
 
+Press <kbd>Shift</kbd> + <kbd>Alt</kbd> + <kbd>W</kbd> (or <kbd>Shift</kbd> + <kbd>Option</kbd> + <kbd>W</kbd> on Mac) to place the opening tag, selected content, and closing tag on separate lines.
+
 By default, pressing spacebar will deselect the closing tags, so you can add attributes to the opening tags (you can turn this feature off, see below). If nothing is selected when you run htmltagwrap, it will add an opening and closing tag at the cursor position.
 
 NOTE: This extension works best in files that either use tabs or spaces for indentation.  It may not work as well with mixed tabs/spaces.

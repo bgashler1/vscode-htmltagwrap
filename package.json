@@ -26,6 +26,10 @@
 			{
 				"command": "extension.htmlTagWrap",
 				"title": "Wrap in HTML Tags"
+			},
+			{
+				"command": "extension.htmlTagWrapBlock",
+				"title": "Wrap in HTML Tags with New Lines"
 			}
 		],
 		"keybindings": [
@@ -33,6 +37,12 @@
 				"command": "extension.htmlTagWrap",
 				"key": "alt+w",
 				"mac": "alt+w",
+				"when": "editorTextFocus"
+			},
+			{
+				"command": "extension.htmlTagWrapBlock",
+				"key": "shift+alt+w",
+				"mac": "shift+alt+w",
 				"when": "editorTextFocus"
 			}
 		],
@@ -54,7 +64,8 @@
 		}
 	},
 	"activationEvents": [
-		"onCommand:extension.htmlTagWrap"
+		"onCommand:extension.htmlTagWrap",
+		"onCommand:extension.htmlTagWrapBlock"
 	],
 	"scripts": {
 		"vscode:prepublish": "tsc -p ./",
