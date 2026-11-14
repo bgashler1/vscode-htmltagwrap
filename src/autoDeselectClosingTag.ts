@@ -27,18 +27,16 @@ function lastClosingTagStart(prefix: string): number {
 export async function autoDeselectClosingTag (editor: TextEditor, passedSelections: readonly Selection[]) {
     const tag = getTagDefinition().name;
 	try {
-		// Wait for selections to be made, then listen for changes.
-		// Enter a mode to listen for whitespace and remove the second cursor
 		let windowListener: Disposable;
 		let lastDocumentVersion = editor.document.version;
 		let lastContentChanges: string[] = [];
 		let cancelWaiting: () => void = () => undefined;
+		// Selection events also fire on cursor moves; inspect document changes to detect inserted spaces.
 		const documentListener = workspace.onDidChangeTextDocument(event => {
 			if (event.document === editor.document) lastContentChanges = event.contentChanges.map(change => change.text);
 		});
-		const autoDeselectClosingTagAction: Promise<SpaceInsertedPromiseResolution | { kind: 'pasted-attributes'; ranges: Range[]; openingCarets: Position[] } | string> = new Promise((resolve, reject) => {
+		const autoDeselectClosingTagAction: Promise<SpaceInsertedPromiseResolution | { kind: 'pasted-attributes'; ranges: Range[]; openingCarets: Position[] } | string> = new Promise(resolve => {
 			cancelWaiting = () => resolve('Cancelled by another wrap command');
-			// Have selections changed?
 			windowListener = window.onDidChangeTextEditorSelection(e => {
 				if (e.textEditor !== editor || e.selections.length === 0) return;
 				const documentChanged = editor.document.version !== lastDocumentVersion;
@@ -47,7 +45,6 @@ export async function autoDeselectClosingTag (editor: TextEditor, passedSelectio
 				const isSpaceInserted = sample.endsWith(' ') || editor.document.getText(e.selections[0]) === ' ';
 				const typedSingleSpace = lastContentChanges.length > 0 && lastContentChanges.every(text => text === ' ');
 				if (documentChanged && typedSingleSpace && isSpaceInserted) resolve({
-					passedSelections: passedSelections,
 					spaceInsertedAt: e.selections.map(selection => editor.document.getText(selection) === ' '
 						? new Range(selection.start, selection.end)
 						: new Range(selection.start.translate(undefined, -1), selection.end))
@@ -67,8 +64,6 @@ export async function autoDeselectClosingTag (editor: TextEditor, passedSelectio
 					if (ranges.length > 0) resolve({ kind: 'pasted-attributes', ranges, openingCarets: e.selections.filter((_selection, index) => index % 2 === 0).map(selection => selection.start) });
 				}
 				else if (e.kind === 2 || e.selections.length !== passedSelections.length) {
-					// Listen for anything that changes selection but keyboard input
-					// or an undefined event (such as backspace clearing last selected character)
 					resolve('✔ User changed selection. Event type: ' + e.kind);
 				}
 			});
@@ -76,7 +71,6 @@ export async function autoDeselectClosingTag (editor: TextEditor, passedSelectio
 		pendingCancellation.set(editor, cancelWaiting);
 		const selectionsAfterEvent = await autoDeselectClosingTagAction;
 		if (pendingCancellation.get(editor) === cancelWaiting) pendingCancellation.delete(editor);
-		//Cleanup memory and processes
 		windowListener.dispose();
 		documentListener.dispose();
 		if (typeof selectionsAfterEvent === 'string') return;
