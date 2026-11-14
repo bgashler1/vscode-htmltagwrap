@@ -8,17 +8,20 @@ export async function autoDeselectClosingTag (editor: TextEditor, passedSelectio
 		// Wait for selections to be made, then listen for changes.
 		// Enter a mode to listen for whitespace and remove the second cursor
 		let windowListener: Disposable;
+		let lastDocumentVersion = editor.document.version;
 		const autoDeselectClosingTagAction: Promise<SpaceInsertedPromiseResolution | string> = new Promise((resolve, reject) => {
 			// Have selections changed?
 			windowListener = window.onDidChangeTextEditorSelection(e => {
 				if (e.textEditor !== editor || e.selections.length === 0) return;
+				const documentChanged = editor.document.version !== lastDocumentVersion;
+				lastDocumentVersion = editor.document.version;
 				const sample = editor.document.getText(new Selection(e.selections[0].start.translate(undefined, -1), e.selections[0].end));
 				const isSpaceInserted = sample.endsWith(' ');
-				if (isSpaceInserted) resolve({
+				if (documentChanged && isSpaceInserted) resolve({
 					passedSelections: passedSelections,
 					spaceInsertedAt: e.selections.map(selection => new Range(selection.start.translate(undefined, -1), selection.end))
 				});
-				else if (e.kind === 2) {
+				else if (e.kind === 2 || (!documentChanged && e.selections.some((selection, index) => !passedSelections[index] || !selection.isEqual(passedSelections[index])))) {
 					// Listen for anything that changes selection but keyboard input
 					// or an undefined event (such as backspace clearing last selected character)
 					resolve('✔ User changed selection. Event type: ' + e.kind);
