@@ -13,7 +13,7 @@ class Range {
 }
 class Selection extends Range {}
 
-function runCase(tag, replacedSelection, mixed = false) {
+function runCase(tag, replacedSelection, mixed = false, mouse = false) {
   let listener;
   const vscode = {
     Position, Range, Selection,
@@ -42,10 +42,12 @@ function runCase(tag, replacedSelection, mixed = false) {
     new Selection(new Position(0, closingNameStart), new Position(0, closingNameStart + tag.length))
   ];
   const firstContent = replacedSelection ? '< >hello</ >' : `<${tag} >hello</${tag} >`;
-  const content = firstContent + (mixed ? '|<span >world</span >' : '');
+  const content = mouse ? `<${tag}>hello world</${tag}>` : firstContent + (mixed ? '|<span >world</span >' : '');
   const firstSpace = replacedSelection ? 1 : tag.length + 1;
   const secondSpace = firstContent.lastIndexOf('</') + 2 + (replacedSelection ? 0 : tag.length);
-  const current = [firstSpace, secondSpace].map(i => new Selection(new Position(0, i + 1), new Position(0, i + 1)));
+  const current = mouse
+    ? [new Selection(new Position(0, tag.length + 8), new Position(0, tag.length + 8))]
+    : [firstSpace, secondSpace].map(i => new Selection(new Position(0, i + 1), new Position(0, i + 1)));
   if (mixed) {
     const secondOpening = original.lastIndexOf(`<${tag}>`) + 1;
     const secondClosing = original.lastIndexOf(`</${tag}>`) + 2;
@@ -55,7 +57,7 @@ function runCase(tag, replacedSelection, mixed = false) {
     const typedClosingSpace = content.lastIndexOf('</span ') + '</span'.length;
     current.push(...[typedOpeningSpace, typedClosingSpace].map(i => new Selection(new Position(0, i + 1), new Position(0, i + 1))));
   }
-  const document = { text: content, getText(range) {
+  const document = { text: content, version: 1, getText(range) {
     return range ? this.text.slice(range.start.character, range.end.character) : this.text;
   }, offsetAt(position) { return position.character; }, positionAt(offset) { return new Position(0, offset); } };
   const editor = { document, selections: current, async edit(callback) {
@@ -84,22 +86,23 @@ function runCase(tag, replacedSelection, mixed = false) {
     return true;
   } };
   const promise = autoDeselectClosingTag(editor, passed);
-  listener({ kind: 1, textEditor: editor, selections: current });
+  if (!mouse) document.version++;
+  listener({ kind: mouse ? 2 : 1, textEditor: editor, selections: current });
   return promise.then(() => {
     const caret = editor.selections[0].start.character;
     const withAttribute = document.text.slice(0, caret) + 'class="x"' + document.text.slice(caret);
-    return { text: document.text, selections: editor.selections.length, caret, withAttribute };
+    return { text: document.text, selections: editor.selections.length, caret, carets: editor.selections.map(selection => selection.start.character), withAttribute };
   });
 }
 
 for (const tag of ['p', 'div', 'CountContext']) {
   test(`space replacing selected ${tag} restores both tags`, async () => {
     const result = await runCase(tag, true);
-    assert.deepEqual(result, { text: `<${tag} >hello</${tag}>`, selections: 1, caret: tag.length + 2, withAttribute: `<${tag} class="x">hello</${tag}>` });
+    assert.deepEqual(result, { text: `<${tag} >hello</${tag}>`, selections: 1, caret: tag.length + 2, carets: [tag.length + 2], withAttribute: `<${tag} class="x">hello</${tag}>` });
   });
   test(`space after typed ${tag} leaves only opening attribute space`, async () => {
     const result = await runCase(tag, false);
-    assert.deepEqual(result, { text: `<${tag} >hello</${tag}>`, selections: 1, caret: tag.length + 2, withAttribute: `<${tag} class="x">hello</${tag}>` });
+    assert.deepEqual(result, { text: `<${tag} >hello</${tag}>`, selections: 1, caret: tag.length + 2, carets: [tag.length + 2], withAttribute: `<${tag} class="x">hello</${tag}>` });
   });
 }
 
@@ -109,6 +112,14 @@ test('mixed cursors restore the default tag only where its name was replaced', a
     text: '<div >hello</div>|<span >world</span>',
     selections: 2,
     caret: 5,
+    carets: [5, '<div >hello</div>|<span '.length],
     withAttribute: '<div class="x">hello</div>|<span >world</span>'
   });
+});
+
+test('mouse click after existing whitespace does not move the caret', async () => {
+  const result = await runCase('div', false, false, true);
+  assert.equal(result.text, '<div>hello world</div>');
+  assert.equal(result.selections, 1);
+  assert.equal(result.caret, '<div>hello '.length);
 });
