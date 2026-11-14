@@ -111,6 +111,32 @@ suite('Extension Tests', function () {
 			}
 		});
 	}
+	test('moving the cursor after existing whitespace leaves it in place', async function () {
+		this.timeout(10000);
+		const config = workspace.getConfiguration('htmltagwrap');
+		const document = await workspace.openTextDocument({ language: 'html', content: 'hello world' });
+		const editor = await window.showTextDocument(document);
+		await config.update('tag', 'div', true);
+		await config.update('autoDeselectClosingTag', true, true);
+		try {
+			editor.selection = new Selection(0, 0, 0, 11);
+			const wrapping = commands.executeCommand('extension.htmlTagWrap');
+			const deadline = Date.now() + 5000;
+			while (editor.document.getText() !== '<div>hello world</div>' || editor.selections.length !== 2) {
+				if (Date.now() > deadline) throw new Error('Wrap did not complete');
+				await new Promise(resolve => setTimeout(resolve, 10));
+			}
+			const caret = '<div>hello '.length;
+			editor.selection = new Selection(0, caret, 0, caret);
+			await wrapping;
+			expect(editor.document.getText()).to.equal('<div>hello world</div>');
+			expect(editor.selection.active.character).to.equal(caret);
+		} finally {
+			await config.update('tag', undefined, true);
+			await config.update('autoDeselectClosingTag', undefined, true);
+			await commands.executeCommand('workbench.action.closeActiveEditor');
+		}
+	});
 	
 	// Single selection tests
 	test('HTML with tabs block wrap test', function () {
