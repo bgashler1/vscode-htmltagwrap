@@ -4,7 +4,7 @@
 //
 
 import {expect} from 'chai';
-import {workspace, window, Selection, Position, commands, extensions, Uri, TextEditor, Range, WorkspaceConfiguration} from 'vscode';
+import {workspace, window, Selection, Position, commands, extensions, Uri, TextEditor, Range, WorkspaceConfiguration, SnippetString} from 'vscode';
 import {copySync, CopyOptions, emptyDir} from 'fs-extra';
 import * as extension from '../../src/extension';
 
@@ -97,12 +97,12 @@ suite('Extension Tests', function () {
 					await new Promise(resolve => setTimeout(resolve, 10));
 				}
 				await new Promise(resolve => setTimeout(resolve, 0));
-				await commands.executeCommand('type', { text: ' ' });
+				await editor.insertSnippet(new SnippetString(' '));
 				await wrapping;
 				expect(editor.document.getText()).to.equal(`<${tag} >hello</${tag}>`);
 				expect(editor.selections).to.have.length(1);
 				expect(editor.selection.active.character).to.equal(tag.length + 2);
-				await commands.executeCommand('type', { text: 'class="x"' });
+				await editor.insertSnippet(new SnippetString('class="x"'));
 				expect(editor.document.getText()).to.equal(`<${tag} class="x">hello</${tag}>`);
 			} finally {
 				await config.update('tag', undefined, true);
