@@ -11,15 +11,14 @@ export async function autoDeselectClosingTag (editor: TextEditor, passedSelectio
 		const autoDeselectClosingTagAction: Promise<SpaceInsertedPromiseResolution | string> = new Promise((resolve, reject) => {
 			// Have selections changed?
 			windowListener = window.onDidChangeTextEditorSelection(e => {
-				if (e.kind === undefined || e.kind === 1) {
-					// Check if user added a space
-					const sample = editor.document.getText(new Selection(e.selections[0].start.translate(undefined, -1), e.selections[0].end));
-					const isSpaceInserted = sample.includes(' ', sample.length - 1);
-					if (isSpaceInserted === true) resolve({
-						passedSelections: passedSelections,
-						spaceInsertedAt: e.selections.map(selection => new Range(selection.start.translate(undefined, -1), selection.end))
-					});
-				} else {
+				if (e.textEditor !== editor || e.selections.length === 0) return;
+				const sample = editor.document.getText(new Selection(e.selections[0].start.translate(undefined, -1), e.selections[0].end));
+				const isSpaceInserted = sample.endsWith(' ');
+				if (isSpaceInserted) resolve({
+					passedSelections: passedSelections,
+					spaceInsertedAt: e.selections.map(selection => new Range(selection.start.translate(undefined, -1), selection.end))
+				});
+				else if (e.kind === 2) {
 					// Listen for anything that changes selection but keyboard input
 					// or an undefined event (such as backspace clearing last selected character)
 					resolve('✔ User changed selection. Event type: ' + e.kind);
@@ -29,34 +28,43 @@ export async function autoDeselectClosingTag (editor: TextEditor, passedSelectio
 		const selectionsAfterEvent = await autoDeselectClosingTagAction;
 		//Cleanup memory and processes
 		windowListener.dispose();
-		
-		await editor.edit(async (editBuilder) => {
-			if (typeof selectionsAfterEvent === 'string') return false;
-			const firstSpace = selectionsAfterEvent.spaceInsertedAt[0];
-			const wasSpacebarPressedWithoutChangingTag = firstSpace.start.isEqual(selectionsAfterEvent.passedSelections[0].start);
-			// Update selections
-			for (let i = 0; i < selectionsAfterEvent.spaceInsertedAt.length; i ++) {
-				if (wasSpacebarPressedWithoutChangingTag === true) {
-					// A space replaced each selected tag name. Restore names at their
-					// current positions, which shift when the name has multiple characters.
-					editBuilder.replace(selectionsAfterEvent.spaceInsertedAt[i], i % 2 === 0 ? tag + ' ' : tag);
-				} else if (i % 2 !== 0) {
-					// A space was typed after the tag name. Keep it in opening tags only.
-					editBuilder.delete(selectionsAfterEvent.spaceInsertedAt[i]);
+		if (typeof selectionsAfterEvent === 'string') return;
+
+		const edits: Array<{ start: number; end: number; replacementLength: number }> = [];
+		const openingCarets: Array<{ start: number; addedLength: number }> = [];
+		const spaceRanges = selectionsAfterEvent.spaceInsertedAt;
+		for (let i = 0; i < spaceRanges.length; i += 2) {
+			const openingSpace = spaceRanges[i];
+			const precedingCharacter = editor.document.getText(new Range(openingSpace.start.translate(undefined, -1), openingSpace.start));
+			const replacedName = precedingCharacter === '<';
+			openingCarets.push({ start: editor.document.offsetAt(openingSpace.start), addedLength: replacedName ? tag.length + 1 : 1 });
+			if (replacedName) {
+				for (let j = i; j < Math.min(i + 2, spaceRanges.length); j++) {
+					const range = spaceRanges[j];
+					edits.push({ start: editor.document.offsetAt(range.start), end: editor.document.offsetAt(range.end), replacementLength: j === i ? tag.length + 1 : tag.length });
 				}
+			} else if (spaceRanges[i + 1]) {
+				const range = spaceRanges[i + 1];
+				edits.push({ start: editor.document.offsetAt(range.start), end: editor.document.offsetAt(range.end), replacementLength: 0 });
+			}
+		}
+		const applied = await editor.edit((editBuilder) => {
+			for (const edit of edits) {
+				const range = new Range(editor.document.positionAt(edit.start), editor.document.positionAt(edit.end));
+				const openingEdit = openingCarets.some(caret => caret.start === edit.start);
+				const replacement = edit.replacementLength === 0 ? '' : openingEdit ? tag + ' ' : tag;
+				editBuilder.replace(range, replacement);
 			}
 		}, {
 			undoStopBefore: false,
 			undoStopAfter: false
 		});
-		// Update selections
-		const newSelections: Selection[] = [];
-		for (const [index, selection] of editor.selections.entries()) {
-			if (index % 2 === 0) {
-				newSelections.push(selection);
-			}
-		}
-		editor.selections = newSelections;
+		if (!applied) return;
+		editor.selections = openingCarets.map(caret => {
+			const shift = edits.filter(edit => edit.end <= caret.start).reduce((sum, edit) => sum + edit.replacementLength - (edit.end - edit.start), 0);
+			const position = editor.document.positionAt(caret.start + shift + caret.addedLength);
+			return new Selection(position, position);
+		});
 		console.log('✔︎ Deselected closing tags');
 	}
 	catch (err) {
