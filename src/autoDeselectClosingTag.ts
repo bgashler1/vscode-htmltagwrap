@@ -32,17 +32,17 @@ export async function autoDeselectClosingTag (editor: TextEditor, passedSelectio
 		
 		await editor.edit(async (editBuilder) => {
 			if (typeof selectionsAfterEvent === 'string') return false;
+			const firstSpace = selectionsAfterEvent.spaceInsertedAt[0];
+			const wasSpacebarPressedWithoutChangingTag = firstSpace.start.isEqual(selectionsAfterEvent.passedSelections[0].start);
 			// Update selections
 			for (let i = 0; i < selectionsAfterEvent.spaceInsertedAt.length; i ++) {
-				if (i % 2 !== 0) {
-					// Remove whitespace on closing tag
-					editBuilder.delete(selectionsAfterEvent.spaceInsertedAt[i]);
-				}
-				const sampleSelection = selectionsAfterEvent.passedSelections[0];
-				const wasSpacebarPressedWithoutChangingTag = selectionsAfterEvent.spaceInsertedAt[0].isEqual(sampleSelection);
 				if (wasSpacebarPressedWithoutChangingTag === true) {
-					// Restore the tag that was overwritten by pressing spacebar while the tags were selected
-					editBuilder.insert(selectionsAfterEvent.passedSelections[i].start, tag);
+					// A space replaced each selected tag name. Restore names at their
+					// current positions, which shift when the name has multiple characters.
+					editBuilder.replace(selectionsAfterEvent.spaceInsertedAt[i], i % 2 === 0 ? tag + ' ' : tag);
+				} else if (i % 2 !== 0) {
+					// A space was typed after the tag name. Keep it in opening tags only.
+					editBuilder.delete(selectionsAfterEvent.spaceInsertedAt[i]);
 				}
 			}
 		}, {
