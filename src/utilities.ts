@@ -24,6 +24,15 @@ export function getTag() {
     return tagSetting;
 }
 
+export function getTagDefinition(): { name: string; attributes: string } {
+    const setting = getTag().trim();
+    const match = /^(\S+?)(\s[\s\S]*)?$/.exec(setting);
+    return {
+        name: match ? match[1] : setting,
+        attributes: match && match[2] ? match[2] : ''
+    };
+}
+
 export function getTabString(editor: TextEditor): string {
 	const spacesUsed = <boolean>editor.options.insertSpaces;
 	if (spacesUsed) {

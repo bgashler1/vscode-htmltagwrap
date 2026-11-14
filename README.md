@@ -24,7 +24,7 @@ You can change the default behavior of htmltagwrap with the following settings.
 To open VS Code settings, click the "gear" icon ![Global Actions button](images/settingsIcon.png) > then "Settings"
 
 ### Available settings
-* `htmltagwrap.tag` -  The default HTML tag to insert.
+* `htmltagwrap.tag` -  The default HTML tag to insert. You can include attributes, such as `code translate="no"`; attributes are added only to the opening tag.
 * `htmltagwrap.autoDeselectClosingTag` -  Automatically deselect the closing tag after inserting a space.
 
 ### Defaults
