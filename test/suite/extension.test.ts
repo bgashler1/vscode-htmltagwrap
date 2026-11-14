@@ -78,6 +78,88 @@ async function parametrizedMultiSelectionTest(startFilePath: string, expectedRes
 
 
 suite('Extension Tests', function () {
+	for (const scenario of [
+		{ name: 'inline', setting: 'code translate="no"', input: 'hello', selections: [new Selection(0, 0, 0, 5)], expected: '<code translate="no">hello</code>' },
+		{ name: 'empty selection', setting: 'code translate="no"', input: '', selections: [new Selection(0, 0, 0, 0)], expected: '<code translate="no"></code>' },
+		{ name: 'quoted attribute space', setting: 'div data-label="hello world"', input: 'hello', selections: [new Selection(0, 0, 0, 5)], expected: '<div data-label="hello world">hello</div>' },
+		{ name: 'multiple selections', setting: 'code translate="no"', input: 'hello world', selections: [new Selection(0, 0, 0, 5), new Selection(0, 6, 0, 11)], expected: '<code translate="no">hello</code> <code translate="no">world</code>' },
+		{ name: 'block', setting: 'code translate="no"', input: 'first\nsecond', selections: [new Selection(0, 0, 1, 6)], expected: '<code translate="no">\n  first\n  second\n</code>' }
+	]) {
+		test(`default tag attributes: ${scenario.name}`, async function () {
+			const config = workspace.getConfiguration('htmltagwrap');
+			const document = await workspace.openTextDocument({ language: 'html', content: scenario.input });
+			const editor = await window.showTextDocument(document);
+			editor.options = { insertSpaces: true, tabSize: 2 };
+			await config.update('tag', scenario.setting, true);
+			await config.update('autoDeselectClosingTag', false, true);
+			try {
+				editor.selections = scenario.selections;
+				await commands.executeCommand('extension.htmlTagWrap');
+				expect(editor.document.getText()).to.equal(scenario.expected);
+				const tagName = scenario.setting.split(' ')[0];
+				expect(editor.selections.map(selection => editor.document.getText(selection))).to.deep.equal(Array(scenario.selections.length * 2).fill(tagName));
+			} finally {
+				await config.update('tag', undefined, true);
+				await config.update('autoDeselectClosingTag', undefined, true);
+				await commands.executeCommand('workbench.action.closeActiveEditor');
+			}
+		});
+	}
+	test('default tag attributes remain editable after space', async function () {
+		this.timeout(10000);
+		const config = workspace.getConfiguration('htmltagwrap');
+		const document = await workspace.openTextDocument({ language: 'html', content: 'hello' });
+		const editor = await window.showTextDocument(document);
+		await config.update('tag', 'code translate="no"', true);
+		await config.update('autoDeselectClosingTag', true, true);
+		try {
+			editor.selection = new Selection(0, 0, 0, 5);
+			const wrapping = commands.executeCommand('extension.htmlTagWrap');
+			const deadline = Date.now() + 5000;
+			while (editor.document.getText() !== '<code translate="no">hello</code>' || editor.selections.length !== 2) {
+				if (Date.now() > deadline) throw new Error('Wrap did not complete');
+				await new Promise(resolve => setTimeout(resolve, 10));
+			}
+			await editor.insertSnippet(new SnippetString(' '));
+			await wrapping;
+			expect(editor.document.getText()).to.equal('<code translate="no">hello</code>');
+			expect(editor.selection.isEmpty).to.equal(true);
+			expect(editor.selection.active.character).to.equal('<code '.length);
+			await editor.insertSnippet(new SnippetString('data-x="1" '));
+			expect(editor.document.getText()).to.equal('<code data-x="1" translate="no">hello</code>');
+		} finally {
+			await config.update('tag', undefined, true);
+			await config.update('autoDeselectClosingTag', undefined, true);
+			await commands.executeCommand('workbench.action.closeActiveEditor');
+		}
+	});
+	test('editing the configured tag name does not double its attribute space', async function () {
+		this.timeout(10000);
+		const config = workspace.getConfiguration('htmltagwrap');
+		const document = await workspace.openTextDocument({ language: 'html', content: 'hello' });
+		const editor = await window.showTextDocument(document);
+		await config.update('tag', 'code translate="no"', true);
+		await config.update('autoDeselectClosingTag', true, true);
+		try {
+			editor.selection = new Selection(0, 0, 0, 5);
+			const wrapping = commands.executeCommand('extension.htmlTagWrap');
+			const deadline = Date.now() + 5000;
+			while (editor.document.getText() !== '<code translate="no">hello</code>' || editor.selections.length !== 2) {
+				if (Date.now() > deadline) throw new Error('Wrap did not complete');
+				await new Promise(resolve => setTimeout(resolve, 10));
+			}
+			await editor.insertSnippet(new SnippetString('span'));
+			await editor.insertSnippet(new SnippetString(' '));
+			await wrapping;
+			expect(editor.document.getText()).to.equal('<span translate="no">hello</span>');
+			expect(editor.selection.isEmpty).to.equal(true);
+			expect(editor.selection.active.character).to.equal('<span '.length);
+		} finally {
+			await config.update('tag', undefined, true);
+			await config.update('autoDeselectClosingTag', undefined, true);
+			await commands.executeCommand('workbench.action.closeActiveEditor');
+		}
+	});
 	for (const tag of ['p', 'div', 'CountContext']) {
 		test(`space after wrapping preserves the ${tag} closing tag`, async function () {
 			this.timeout(10000);

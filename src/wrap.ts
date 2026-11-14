@@ -9,12 +9,12 @@ This setting would autocloses these opening tags if they come with element names
 const openingTags: string = '<' + '>';
 const closingTags: string = '</' + '>';
 
-export async function wrapInTagsAndSelect(editor:TextEditor, tag: string) {
-    const tagsMissingElements = await wrapInEmptyTags(editor, tag);
-    return await selectAndAddTags(editor, tag, tagsMissingElements);
+export async function wrapInTagsAndSelect(editor:TextEditor, tag: string, attributes = '') {
+    const tagsMissingElements = await wrapInEmptyTags(editor, tag, attributes);
+    return await selectAndAddTags(editor, tag, attributes, tagsMissingElements);
 }
 
-async function wrapInEmptyTags (editor: TextEditor, tag) {
+async function wrapInEmptyTags (editor: TextEditor, tag: string, attributes: string) {
 	const tagsMissingElements: RangeIndexList = [];
     // Start inserting tags
     const tabSizeSpace = getTabString(editor);
@@ -45,7 +45,7 @@ async function wrapInEmptyTags (editor: TextEditor, tag) {
 				}
 
 				// Modify first line of selection
-				editBuilder.insert(new Position(selectionStart.line, selectionStart.character), '<' + tag + '>\n' + selectionStart_spaces + tabSizeSpace);
+				editBuilder.insert(new Position(selectionStart.line, selectionStart.character), '<' + tag + attributes + '>\n' + selectionStart_spaces + tabSizeSpace);
 			}
 			else {
 				// ================
@@ -66,7 +66,7 @@ async function wrapInEmptyTags (editor: TextEditor, tag) {
     return tagsMissingElements;
 }
 
-async function selectAndAddTags (editor: TextEditor, tag: string, tagsMissingElements: RangeIndexList): Promise<readonly Selection[]> {
+async function selectAndAddTags (editor: TextEditor, tag: string, attributes: string, tagsMissingElements: RangeIndexList): Promise<readonly Selection[]> {
     const tabSizeSpace = getTabString(editor);
     // Add tag name elements
     // Need to fetch selections again as they are no longer accurate
@@ -87,7 +87,7 @@ async function selectAndAddTags (editor: TextEditor, tag: string, tagsMissingEle
                     // backtrack to account for that
                     tagFirst = tagFirst.translate(0,-3);
                 }
-                editBuilder.insert(tagFirst, tag);
+                editBuilder.insert(tagFirst, tag + attributes);
                 editBuilder.insert(tagSecond, tag);
             });
         }, {
@@ -128,7 +128,7 @@ async function selectAndAddTags (editor: TextEditor, tag: string, tagsMissingEle
                 // ================
                 // same line, just get to the tag element by navigating backwards
 
-                let startPosition = selection.start.character - 1 - tag.length;
+                let startPosition = selection.start.character - 1 - tag.length - attributes.length;
                 const endPosition = selection.end.character - 1 - tag.length;
 
                 if(selection.start.character === selection.end.character) {

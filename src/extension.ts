@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { announceNotableUpdate } from './utilities';
 import { wrapInTagsAndSelect } from './wrap';
 import { autoDeselectClosingTag } from './autoDeselectClosingTag';
-import { getTag } from './utilities';
+import { getTagDefinition } from './utilities';
 
 
 export function activate(extensionContext?: vscode.ExtensionContext) {
@@ -13,8 +13,8 @@ export function activate(extensionContext?: vscode.ExtensionContext) {
 		if(editor == null) return;
 		announceNotableUpdate(extensionContext);
 		
-		const tag = getTag();
-		const passedSelections = await wrapInTagsAndSelect(editor, tag);
+		const tag = getTagDefinition();
+		const passedSelections = await wrapInTagsAndSelect(editor, tag.name, tag.attributes);
 
 		const isEnabledAutodeselectClosingTag = vscode.workspace.getConfiguration().get<boolean>("htmltagwrap.autoDeselectClosingTag");
 		if (!isEnabledAutodeselectClosingTag) return;
