@@ -39,9 +39,10 @@ export async function wrapWithSnippet(editor: TextEditor, requestedName?: string
 		}
 	});
 	if (!applied) return;
+	const addedLength = before.length + after.length;
 	editor.selections = plans.map(plan => {
-		const shift = plans.filter(previous => previous.end <= plan.start && previous.start < plan.start)
-			.reduce((total) => total + before.length + after.length, 0);
+		const precedingSelections = plans.filter(previous => previous.end <= plan.start && previous.start < plan.start).length;
+		const shift = precedingSelections * addedLength;
 		const start = document.positionAt(plan.start + shift + before.length);
 		const end = document.positionAt(plan.start + shift + before.length + plan.selected.length);
 		return new Selection(start, end);
