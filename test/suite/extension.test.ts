@@ -79,6 +79,36 @@ async function parametrizedMultiSelectionTest(startFilePath: string, expectedRes
 
 suite('Extension Tests', function () {
 	for (const scenario of [
+		{ name: 'inline', input: 'hello', selections: [new Selection(0, 0, 0, 5)], setting: 'p', expected: '<p>\n  hello\n</p>' },
+		{ name: 'indented line', input: '<section>\n  <img src="xyz" />\n</section>', selections: [new Selection(1, 2, 1, 2 + '<img src="xyz" />'.length)], setting: 'div', expected: '<section>\n  <div>\n    <img src="xyz" />\n  </div>\n</section>' },
+		{ name: 'whole indented line', input: '<section>\n  <img src="xyz" />\n</section>', selections: [new Selection(1, 0, 1, 2 + '<img src="xyz" />'.length)], setting: 'div', expected: '<section>\n  <div>\n    <img src="xyz" />\n  </div>\n</section>' },
+		{ name: 'indented line and newline', input: '<section>\n  <img src="xyz" />\n</section>', selections: [new Selection(1, 0, 2, 0)], setting: 'div', expected: '<section>\n  <div>\n    <img src="xyz" />\n  </div>\n</section>' },
+		{ name: 'multiple selections', input: 'hello world', selections: [new Selection(0, 0, 0, 5), new Selection(0, 6, 0, 11)], setting: 'p', expected: '<p>\n  hello\n</p> <p>\n  world\n</p>' },
+		{ name: 'multiline selection', input: 'first\nsecond', selections: [new Selection(0, 0, 1, 6)], setting: 'p', expected: '<p>\n  first\n  second\n</p>' },
+		{ name: 'relative outdent', input: '  one\ntwo', selections: [new Selection(0, 2, 1, 3)], setting: 'p', expected: '  <p>\n    one\n  two\n  </p>' },
+		{ name: 'configured attributes', input: 'hello', selections: [new Selection(0, 0, 0, 5)], setting: 'code translate="no"', expected: '<code translate="no">\n  hello\n</code>' }
+	]) {
+		test(`new-line shortcut: ${scenario.name}`, async function () {
+			const config = workspace.getConfiguration('htmltagwrap');
+			const document = await workspace.openTextDocument({ language: 'html', content: scenario.input });
+			const editor = await window.showTextDocument(document);
+			editor.options = { insertSpaces: true, tabSize: 2 };
+			await config.update('tag', scenario.setting, true);
+			await config.update('autoDeselectClosingTag', false, true);
+			try {
+				editor.selections = scenario.selections;
+				await commands.executeCommand('extension.htmlTagWrapBlock');
+				expect(editor.document.getText()).to.equal(scenario.expected);
+				const name = scenario.setting.split(' ')[0];
+				expect(editor.selections.map(selection => editor.document.getText(selection))).to.deep.equal(Array(scenario.selections.length * 2).fill(name));
+			} finally {
+				await config.update('tag', undefined, true);
+				await config.update('autoDeselectClosingTag', undefined, true);
+				await commands.executeCommand('workbench.action.closeActiveEditor');
+			}
+		});
+	}
+	for (const scenario of [
 		{ name: 'inline', setting: 'code translate="no"', input: 'hello', selections: [new Selection(0, 0, 0, 5)], expected: '<code translate="no">hello</code>' },
 		{ name: 'empty selection', setting: 'code translate="no"', input: '', selections: [new Selection(0, 0, 0, 0)], expected: '<code translate="no"></code>' },
 		{ name: 'quoted attribute space', setting: 'div data-label="hello world"', input: 'hello', selections: [new Selection(0, 0, 0, 5)], expected: '<div data-label="hello world">hello</div>' },
