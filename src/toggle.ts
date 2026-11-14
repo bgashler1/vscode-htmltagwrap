@@ -5,7 +5,6 @@ interface Wrapper {
 	openEnd: number;
 	closeStart: number;
 	closeEnd: number;
-	name: string;
 }
 
 function openingAt(text: string, start: number): { end: number; name: string } | undefined {
@@ -33,10 +32,10 @@ export async function unwrapIfWrapped(editor: TextEditor): Promise<boolean> {
 	const document = editor.document;
 	const text = document.getText();
 	const selections = editor.selections;
-	let wrappers: Wrapper[] = [];
-	// Immediately after wrapping, the editor selects the opening and closing tag names.
-	if (selections.length > 0 && selections.length % 2 === 0) {
-		for (let index = 0; index < selections.length; index += 2) {
+	// Only paired tag-name selections created by wrapping may toggle; selected HTML still wraps.
+	if (selections.length === 0 || selections.length % 2 !== 0) return false;
+	const wrappers: Wrapper[] = [];
+	for (let index = 0; index < selections.length; index += 2) {
 		const first = selections[index];
 		const second = selections[index + 1];
 		const name = document.getText(first);
@@ -44,17 +43,12 @@ export async function unwrapIfWrapped(editor: TextEditor): Promise<boolean> {
 		const closeStart = document.offsetAt(second.start) - 2;
 		const open = openingAt(text, openStart);
 		const close = closingAt(text, closeStart);
-		if (name && name === document.getText(second) && open?.name === name && close?.name === name &&
-			open.end <= closeStart && document.offsetAt(first.end) <= open.end &&
-			document.offsetAt(second.end) + 1 === close.end) {
-			wrappers.push({ openStart, openEnd: open.end, closeStart, closeEnd: close.end, name });
-		} else {
-			return false;
-		}
-		}
+		if (!name || name !== document.getText(second) || open?.name !== name || close?.name !== name ||
+			open.end > closeStart || document.offsetAt(first.end) > open.end ||
+			document.offsetAt(second.end) + 1 !== close.end) return false;
+		wrappers.push({ openStart, openEnd: open.end, closeStart, closeEnd: close.end });
 	}
-	if (wrappers.length === 0) return false;
-	wrappers = wrappers.sort((a, b) => a.openStart - b.openStart);
+	wrappers.sort((a, b) => a.openStart - b.openStart);
 	if (wrappers.some((wrapper, index) => index > 0 && wrapper.openStart < wrappers[index - 1].closeEnd)) return false;
 	const applied = await editor.edit(builder => {
 		for (const wrapper of wrappers) {
