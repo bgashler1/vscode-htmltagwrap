@@ -1,6 +1,6 @@
 # PR verification evidence
 
-Each row was tested from an isolated archive of the exact PR tree. `npm run compile`, `npm run lint`, `npm run test:unit` (8/8), and the full extension-host suite passed on both VS Code 1.146.0 and 1.74.3. The host suite asserts document text and editor selections.
+Each row was tested from an isolated archive of the exact PR tree. #51 contains source readability changes only, and #47 contains the release workflow. `npm run compile`, `npm run lint`, `npm run test:unit` (8/8), and the full extension-host suite passed on both VS Code 1.146.0 and 1.74.3. The host suite asserts document text and editor selections.
 
 | Merge order | PR head | Host tests on each VS Code version | Visual evidence |
 |---|---|---:|---|
@@ -10,7 +10,7 @@ Each row was tested from an isolated archive of the exact PR tree. `npm run comp
 | [#48](https://github.com/bgashler1/vscode-htmltagwrap/pull/48) | `efff145ec7fbf3772fefba8f5ac3fab731623c46` | 35/35 | [Before](pr48-bug.mp4) · [After](pr48-fix.mp4) · [Comparison](pr48-comparison.jpg) |
 | [#49](https://github.com/bgashler1/vscode-htmltagwrap/pull/49) | `8e3567d422b727f9e382e26bced4a5a3cfcba1cf` | 43/43 | [Before](pr49-bug.mp4) · [After](pr49-fix.mp4) · [Comparison](pr49-comparison.jpg) |
 | [#50](https://github.com/bgashler1/vscode-htmltagwrap/pull/50) | `be585dd34569a4fdd15ca6d986ad5d46b131bc9c` | 48/48 | [Before](pr50-bug.mp4) · [After](pr50-fix.mp4) · [Comparison](pr50-comparison.jpg) |
-| [#47](https://github.com/bgashler1/vscode-htmltagwrap/pull/47) | `e6eb42c0afaf3ba8bb511f110368063e55593b56` | 48/48 | VSIX package proof below |
+| [#51](https://github.com/bgashler1/vscode-htmltagwrap/pull/51) | `e866d810560ff61f0111c98211f681f114ed7505` | 48/48 | Source cleanup; no UI change |\n| [#47](https://github.com/bgashler1/vscode-htmltagwrap/pull/47) | `ef7a4a9e4a5f7203c4ad8c41cbe04d8b8e4d4491` | 48/48 | VSIX package proof below |
 
 ## Recording method
 
@@ -18,7 +18,7 @@ The videos show the actual VS Code 1.146 editor from the parent and fixed PR hea
 
 ## Publishing package proof
 
-On the exact #47 tree, `npx --yes @vscode/vsce@4.0.0 package --out htmltagwrap.vsix` succeeded after `.vscode-test` was excluded. The 20-file VSIX includes `extension/out/src/{extension,wrap,autoDeselectClosingTag,snippets,toggle}.js`, package metadata, and icon assets. It excludes tests, the workflow, and the downloaded VS Code editor. A clean `npm ci` build produced VSIX SHA-256 `12c16575228966ac1a19b6bce613ccede0b48227b1fc7a271fa62071c7de383f`. A second package run after host testing produced SHA-256 `05001ab94174e9c29444ab0950a21ced7af1cdfe2a036beb2a01c78c2ba9b8fd`; all 20 extracted entry payload hashes were identical. The archive bytes differ across runs. The workflow YAML parsed; `v1.0.0` passed its tag guard and `v1.0.1` failed it as expected. Actual registry publication requires repository secrets `VSCE_PAT` and `OVSX_PAT`.
+On the exact #47 tree, `npx --yes @vscode/vsce@4.0.0 package --out htmltagwrap.vsix` succeeded after `.vscode-test` was excluded. The 20-file VSIX includes `extension/out/src/{extension,wrap,autoDeselectClosingTag,snippets,toggle}.js`, package metadata, and icon assets. It excludes tests, the workflow, and the downloaded VS Code editor. The rebased #47 tip passed a clean `npm ci` and produced a 20-file VSIX with SHA-256 `57caffb2d38fc82fbb41c44acf1598eef0cc119de9132777caf8b2d45c575de9`. The workflow YAML parsed; `v1.0.0` passed its tag guard and `v1.0.1` failed it as expected. Actual registry publication requires repository secrets `VSCE_PAT` and `OVSX_PAT`.
 
 ## Reproduce host tests
 
