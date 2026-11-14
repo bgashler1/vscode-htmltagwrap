@@ -10,7 +10,8 @@ Each row was tested from an isolated archive of the exact PR tree. #51 contains 
 | [#48](https://github.com/bgashler1/vscode-htmltagwrap/pull/48) | `efff145ec7fbf3772fefba8f5ac3fab731623c46` | 35/35 | [Before](pr48-bug.mp4) · [After](pr48-fix.mp4) · [Comparison](pr48-comparison.jpg) |
 | [#49](https://github.com/bgashler1/vscode-htmltagwrap/pull/49) | `8e3567d422b727f9e382e26bced4a5a3cfcba1cf` | 43/43 | [Before](pr49-bug.mp4) · [After](pr49-fix.mp4) · [Comparison](pr49-comparison.jpg) |
 | [#50](https://github.com/bgashler1/vscode-htmltagwrap/pull/50) | `be585dd34569a4fdd15ca6d986ad5d46b131bc9c` | 48/48 | [Before](pr50-bug.mp4) · [After](pr50-fix.mp4) · [Comparison](pr50-comparison.jpg) |
-| [#51](https://github.com/bgashler1/vscode-htmltagwrap/pull/51) | `e866d810560ff61f0111c98211f681f114ed7505` | 48/48 | Source cleanup; no UI change |\n| [#47](https://github.com/bgashler1/vscode-htmltagwrap/pull/47) | `ef7a4a9e4a5f7203c4ad8c41cbe04d8b8e4d4491` | 48/48 | VSIX package proof below |
+| [#51](https://github.com/bgashler1/vscode-htmltagwrap/pull/51) | `e866d810560ff61f0111c98211f681f114ed7505` | 48/48 | Source cleanup; no UI change |
+| [#47](https://github.com/bgashler1/vscode-htmltagwrap/pull/47) | `ef7a4a9e4a5f7203c4ad8c41cbe04d8b8e4d4491` | 48/48 | VSIX package proof below |
 
 ## Recording method
 
