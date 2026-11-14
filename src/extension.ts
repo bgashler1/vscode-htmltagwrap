@@ -3,6 +3,7 @@ import { announceNotableUpdate } from './utilities';
 import { wrapInTagsAndSelect, wrapInBlockTagsAndSelect } from './wrap';
 import { autoDeselectClosingTag } from './autoDeselectClosingTag';
 import { getTagDefinition } from './utilities';
+import { wrapWithSnippet } from './snippets';
 
 
 export function activate(extensionContext?: vscode.ExtensionContext) {
@@ -24,5 +25,9 @@ export function activate(extensionContext?: vscode.ExtensionContext) {
 	};
 	const wrapCommand = vscode.commands.registerCommand('extension.htmlTagWrap', () => runWrap(false));
 	const blockCommand = vscode.commands.registerCommand('extension.htmlTagWrapBlock', () => runWrap(true));
-	extensionContext?.subscriptions.push(wrapCommand, blockCommand);
+	const snippetCommand = vscode.commands.registerCommand('extension.htmlTagWrapSnippet', (name?: string) => {
+		const editor = vscode.window.activeTextEditor;
+		if (editor) return wrapWithSnippet(editor, name);
+	});
+	extensionContext?.subscriptions.push(wrapCommand, blockCommand, snippetCommand);
 }

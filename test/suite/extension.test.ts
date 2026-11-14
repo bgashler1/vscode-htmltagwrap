@@ -4,7 +4,7 @@
 //
 
 import {expect} from 'chai';
-import {workspace, window, env, Selection, Position, commands, extensions, Uri, TextEditor, Range, WorkspaceConfiguration, SnippetString} from 'vscode';
+import {workspace, window, env, Selection, Position, commands, extensions, Uri, TextEditor, Range, WorkspaceConfiguration, SnippetString, EndOfLine} from 'vscode';
 import {copySync, CopyOptions, emptyDir} from 'fs-extra';
 import * as extension from '../../src/extension';
 
@@ -78,6 +78,48 @@ async function parametrizedMultiSelectionTest(startFilePath: string, expectedRes
 
 
 suite('Extension Tests', function () {
+	for (const scenario of [
+		{ name: 'basic', input: 'hello', selections: [new Selection(0, 0, 0, 5)], before: '<!-- ', after: ' -->', expected: '<!-- hello -->', selected: ['hello'] },
+		{ name: 'empty before', input: 'hello', selections: [new Selection(0, 0, 0, 5)], before: '', after: '!', expected: 'hello!', selected: ['hello'] },
+		{ name: 'empty after', input: 'hello', selections: [new Selection(0, 0, 0, 5)], before: '(', after: '', expected: '(hello', selected: ['hello'] },
+		{ name: 'empty selection', input: 'hello', selections: [new Selection(0, 5, 0, 5)], before: '[', after: ']', expected: 'hello[]', selected: [''] },
+		{ name: 'multiline fragments', input: 'hello', selections: [new Selection(0, 0, 0, 5)], before: '<details>\n<summary>More</summary>\n', after: '\n</details>', expected: '<details>\n<summary>More</summary>\nhello\n</details>', selected: ['hello'] },
+		{ name: 'multiple selections', input: 'hello world', selections: [new Selection(0, 0, 0, 5), new Selection(0, 6, 0, 11)], before: '[', after: ']', expected: '[hello] [world]', selected: ['hello', 'world'] },
+		{ name: 'long fragment', input: 'x', selections: [new Selection(0, 0, 0, 1)], before: 'a'.repeat(300), after: 'z'.repeat(300), expected: 'a'.repeat(300) + 'x' + 'z'.repeat(300), selected: ['x'] }
+	]) {
+		test(`saved wrap snippet: ${scenario.name}`, async function () {
+			const config = workspace.getConfiguration('htmltagwrap');
+			const document = await workspace.openTextDocument({ language: 'html', content: scenario.input });
+			const editor = await window.showTextDocument(document);
+			await config.update('snippets', [{ name: 'Example', before: scenario.before, after: scenario.after }], true);
+			try {
+				editor.selections = scenario.selections;
+				await commands.executeCommand('extension.htmlTagWrapSnippet', 'Example');
+				expect(editor.document.getText()).to.equal(scenario.expected);
+				expect(editor.selections.map(selection => editor.document.getText(selection))).to.deep.equal(scenario.selected);
+			} finally {
+				await config.update('snippets', undefined, true);
+				await commands.executeCommand('workbench.action.closeActiveEditor');
+			}
+		});
+	}
+	test('saved wrap snippet preserves selection in a CRLF document', async function () {
+		const config = workspace.getConfiguration('htmltagwrap');
+		const document = await workspace.openTextDocument({ language: 'html', content: 'hello\r\nworld' });
+		const editor = await window.showTextDocument(document);
+		await editor.edit(builder => builder.setEndOfLine(EndOfLine.CRLF));
+		await config.update('snippets', [{ name: 'Lines', before: '<div>\n', after: '\n</div>' }], true);
+		try {
+			editor.selection = new Selection(1, 0, 1, 5);
+			await commands.executeCommand('extension.htmlTagWrapSnippet', 'Lines');
+			expect(editor.document.eol).to.equal(EndOfLine.CRLF);
+			expect(editor.document.getText()).to.equal('hello\r\n<div>\r\nworld\r\n</div>');
+			expect(editor.document.getText(editor.selection)).to.equal('world');
+		} finally {
+			await config.update('snippets', undefined, true);
+			await commands.executeCommand('workbench.action.closeActiveEditor');
+		}
+	});
 	for (const scenario of [
 		{ name: 'inline', input: 'hello', selections: [new Selection(0, 0, 0, 5)], setting: 'p', expected: '<p>\n  hello\n</p>' },
 		{ name: 'indented line', input: '<section>\n  <img src="xyz" />\n</section>', selections: [new Selection(1, 2, 1, 2 + '<img src="xyz" />'.length)], setting: 'div', expected: '<section>\n  <div>\n    <img src="xyz" />\n  </div>\n</section>' },
