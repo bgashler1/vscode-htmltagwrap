@@ -16,10 +16,12 @@ export async function autoDeselectClosingTag (editor: TextEditor, passedSelectio
 				const documentChanged = editor.document.version !== lastDocumentVersion;
 				lastDocumentVersion = editor.document.version;
 				const sample = editor.document.getText(new Selection(e.selections[0].start.translate(undefined, -1), e.selections[0].end));
-				const isSpaceInserted = sample.endsWith(' ');
+				const isSpaceInserted = sample.endsWith(' ') || editor.document.getText(e.selections[0]) === ' ';
 				if (documentChanged && isSpaceInserted) resolve({
 					passedSelections: passedSelections,
-					spaceInsertedAt: e.selections.map(selection => new Range(selection.start.translate(undefined, -1), selection.end))
+					spaceInsertedAt: e.selections.map(selection => editor.document.getText(selection) === ' '
+						? new Range(selection.start, selection.end)
+						: new Range(selection.start.translate(undefined, -1), selection.end))
 				});
 				else if (e.kind === 2 || (!documentChanged && e.selections.some((selection, index) => !passedSelections[index] || !selection.isEqual(passedSelections[index])))) {
 					// Listen for anything that changes selection but keyboard input
