@@ -18,11 +18,12 @@ async function main() {
 		await runTests({
 			extensionDevelopmentPath,
 			extensionTestsPath,
-			version: "1.7.5",
+			version: process.env.VSCODE_TEST_VERSION || 'stable',
+			vscodeExecutablePath: process.env.VSCODE_EXECUTABLE_PATH,
 			launchArgs: ["--disable-extensions"]
 		});
 	} catch (err) {
-		console.error('Failed to run tests');
+		console.error('Failed to run tests', err);
 		process.exit(1);
 	}
 }

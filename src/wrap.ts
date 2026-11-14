@@ -1,4 +1,4 @@
-import { window, workspace, TextEditor, Position, Selection } from 'vscode';
+import { TextEditor, Position, Selection } from 'vscode';
 import { getTabString } from './utilities';
 import { RangeIndexList } from './types';
 
@@ -143,17 +143,6 @@ async function selectAndAddTags (editor: TextEditor, tag: string, tagsMissingEle
             
         }
     });
-    return await new Promise((resolve, reject) => {
-        editor.selections = toSelect;
-        const watcher = window.onDidChangeTextEditorSelection((event)=> {
-            event.selections.forEach((selection, i) => {
-                if (!selection.isEqual(toSelect[i])) {
-                    console.error('Selections were not updated as extension expected');
-                    reject('Selections not updated');
-                }
-            });
-            resolve(editor.selections);
-            watcher.dispose();
-        });
-    });
+    editor.selections = toSelect;
+    return editor.selections;
 }
