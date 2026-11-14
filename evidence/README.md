@@ -18,7 +18,7 @@ The videos show the actual VS Code 1.146 editor from the parent and fixed PR hea
 
 ## Publishing package proof
 
-On the exact #47 tree, `npx --yes @vscode/vsce@4.0.0 package --out htmltagwrap.vsix` succeeded after `.vscode-test` was excluded. The 20-file VSIX includes `extension/out/src/{extension,wrap,autoDeselectClosingTag,snippets,toggle}.js`, package metadata, and icon assets. It excludes tests, the workflow, and the downloaded VS Code editor. SHA-256 of the package: `05001ab94174e9c29444ab0950a21ced7af1cdfe2a036beb2a01c78c2ba9b8fd`. The workflow YAML parsed; `v1.0.0` passed its tag guard and `v1.0.1` failed it as expected. Actual registry publication requires repository secrets `VSCE_PAT` and `OVSX_PAT`.
+On the exact #47 tree, `npx --yes @vscode/vsce@4.0.0 package --out htmltagwrap.vsix` succeeded after `.vscode-test` was excluded. The 20-file VSIX includes `extension/out/src/{extension,wrap,autoDeselectClosingTag,snippets,toggle}.js`, package metadata, and icon assets. It excludes tests, the workflow, and the downloaded VS Code editor. A clean `npm ci` build produced VSIX SHA-256 `12c16575228966ac1a19b6bce613ccede0b48227b1fc7a271fa62071c7de383f`. A second package run after host testing produced SHA-256 `05001ab94174e9c29444ab0950a21ced7af1cdfe2a036beb2a01c78c2ba9b8fd`; all 20 extracted entry payload hashes were identical. The archive bytes differ across runs. The workflow YAML parsed; `v1.0.0` passed its tag guard and `v1.0.1` failed it as expected. Actual registry publication requires repository secrets `VSCE_PAT` and `OVSX_PAT`.
 
 ## Reproduce host tests
 
