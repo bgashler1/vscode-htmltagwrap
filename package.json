@@ -59,6 +59,7 @@
 		"compile": "tsc -p ./",
 		"watch": "tsc -watch -p ./",
 		"lint": "eslint \"src/**/*.ts\"",
+		"test:unit": "npm run compile && node --test test/autoDeselect.unit.test.js",
 		"typings": "typings",
 		"test:LinuxAndOSX": "node ./out/test/runTests.js"
 	},
