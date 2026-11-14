@@ -1,6 +1,22 @@
-import { window, Disposable, Selection, Range, TextEditor, } from 'vscode';
+import { window, workspace, Disposable, Selection, Range, TextEditor, Position } from 'vscode';
 import { SpaceInsertedPromiseResolution } from './types';
 import { getTagDefinition } from './utilities';
+
+function lastClosingTagStart(prefix: string): number {
+	let quote = '';
+	let closingStart = -1;
+	for (let i = 0; i < prefix.length - 1; i++) {
+		const character = prefix[i];
+		if (quote) {
+			if (character === quote) quote = '';
+		} else if (character === '"' || character === "'") {
+			quote = character;
+		} else if (character === '<' && prefix[i + 1] === '/') {
+			closingStart = i;
+		}
+	}
+	return closingStart;
+}
 
 export async function autoDeselectClosingTag (editor: TextEditor, passedSelections: readonly Selection[]) {
     const tag = getTagDefinition().name;
@@ -9,7 +25,11 @@ export async function autoDeselectClosingTag (editor: TextEditor, passedSelectio
 		// Enter a mode to listen for whitespace and remove the second cursor
 		let windowListener: Disposable;
 		let lastDocumentVersion = editor.document.version;
-		const autoDeselectClosingTagAction: Promise<SpaceInsertedPromiseResolution | string> = new Promise((resolve, reject) => {
+		let lastContentChanges: string[] = [];
+		const documentListener = workspace.onDidChangeTextDocument(event => {
+			if (event.document === editor.document) lastContentChanges = event.contentChanges.map(change => change.text);
+		});
+		const autoDeselectClosingTagAction: Promise<SpaceInsertedPromiseResolution | { kind: 'pasted-attributes'; ranges: Range[]; openingCarets: Position[] } | string> = new Promise((resolve, reject) => {
 			// Have selections changed?
 			windowListener = window.onDidChangeTextEditorSelection(e => {
 				if (e.textEditor !== editor || e.selections.length === 0) return;
@@ -17,12 +37,27 @@ export async function autoDeselectClosingTag (editor: TextEditor, passedSelectio
 				lastDocumentVersion = editor.document.version;
 				const sample = editor.document.getText(new Selection(e.selections[0].start.translate(undefined, -1), e.selections[0].end));
 				const isSpaceInserted = sample.endsWith(' ') || editor.document.getText(e.selections[0]) === ' ';
-				if (documentChanged && isSpaceInserted) resolve({
+				const typedSingleSpace = lastContentChanges.length > 0 && lastContentChanges.every(text => text === ' ');
+				if (documentChanged && typedSingleSpace && isSpaceInserted) resolve({
 					passedSelections: passedSelections,
 					spaceInsertedAt: e.selections.map(selection => editor.document.getText(selection) === ' '
 						? new Range(selection.start, selection.end)
 						: new Range(selection.start.translate(undefined, -1), selection.end))
 				});
+				else if (documentChanged && e.selections.length % 2 === 0) {
+					const ranges: Range[] = [];
+					for (let i = 1; i < e.selections.length; i += 2) {
+						const caret = e.selections[i].start;
+						const prefix = editor.document.lineAt(caret.line).text.substring(0, caret.character);
+						const closingStart = lastClosingTagStart(prefix);
+						const closingContents = prefix.substring(closingStart + 2);
+						const attributesStart = closingContents.search(/\s/);
+						if (closingStart >= 0 && attributesStart > 0) {
+							ranges.push(new Range(new Position(caret.line, closingStart + 2 + attributesStart), caret));
+						}
+					}
+					if (ranges.length > 0) resolve({ kind: 'pasted-attributes', ranges, openingCarets: e.selections.filter((_selection, index) => index % 2 === 0).map(selection => selection.start) });
+				}
 				else if (e.kind === 2 || (!documentChanged && e.selections.length !== passedSelections.length)) {
 					// Listen for anything that changes selection but keyboard input
 					// or an undefined event (such as backspace clearing last selected character)
@@ -33,7 +68,21 @@ export async function autoDeselectClosingTag (editor: TextEditor, passedSelectio
 		const selectionsAfterEvent = await autoDeselectClosingTagAction;
 		//Cleanup memory and processes
 		windowListener.dispose();
+		documentListener.dispose();
 		if (typeof selectionsAfterEvent === 'string') return;
+		if ('kind' in selectionsAfterEvent) {
+			const ranges = selectionsAfterEvent.ranges;
+			const caretOffsets = selectionsAfterEvent.openingCarets.map(caret => editor.document.offsetAt(caret));
+			const deletions = ranges.map(range => ({ start: editor.document.offsetAt(range.start), end: editor.document.offsetAt(range.end) }));
+			const applied = await editor.edit(editBuilder => ranges.forEach(range => editBuilder.delete(range)), { undoStopBefore: false, undoStopAfter: false });
+			if (!applied) return;
+			editor.selections = caretOffsets.map(offset => {
+				const shift = deletions.filter(deletion => deletion.end <= offset).reduce((sum, deletion) => sum - (deletion.end - deletion.start), 0);
+				const position = editor.document.positionAt(offset + shift);
+				return new Selection(position, position);
+			});
+			return;
+		}
 
 		const edits: Array<{ start: number; end: number; replacement: string }> = [];
 		const openingCarets: Array<{ start: number; addedLength: number }> = [];

@@ -4,7 +4,7 @@
 //
 
 import {expect} from 'chai';
-import {workspace, window, Selection, Position, commands, extensions, Uri, TextEditor, Range, WorkspaceConfiguration, SnippetString} from 'vscode';
+import {workspace, window, env, Selection, Position, commands, extensions, Uri, TextEditor, Range, WorkspaceConfiguration, SnippetString} from 'vscode';
 import {copySync, CopyOptions, emptyDir} from 'fs-extra';
 import * as extension from '../../src/extension';
 
@@ -155,6 +155,69 @@ suite('Extension Tests', function () {
 			expect(editor.selection.isEmpty).to.equal(true);
 			expect(editor.selection.active.character).to.equal('<span '.length);
 		} finally {
+			await config.update('tag', undefined, true);
+			await config.update('autoDeselectClosingTag', undefined, true);
+			await commands.executeCommand('workbench.action.closeActiveEditor');
+		}
+	});
+	for (const scenario of [
+		{ pasted: 'span class="comment"', expected: '<span class="comment">hello</span>' },
+		{ pasted: 'span class="comment" ', expected: '<span class="comment" >hello</span>' },
+		{ pasted: 'span data-x="</foo>"', expected: '<span data-x="</foo>">hello</span>' }
+	]) {
+	test(`pasted tag ${scenario.pasted} changes only the opening tag`, async function () {
+		this.timeout(10000);
+		const originalClipboard = await env.clipboard.readText();
+		const config = workspace.getConfiguration('htmltagwrap');
+		const document = await workspace.openTextDocument({ language: 'html', content: 'hello' });
+		const editor = await window.showTextDocument(document);
+		await config.update('tag', 'p', true);
+		await config.update('autoDeselectClosingTag', true, true);
+		try {
+			editor.selection = new Selection(0, 0, 0, 5);
+			const wrapping = commands.executeCommand('extension.htmlTagWrap');
+			const deadline = Date.now() + 5000;
+			while (editor.document.getText() !== '<p>hello</p>' || editor.selections.length !== 2) {
+				if (Date.now() > deadline) throw new Error('Wrap did not complete');
+				await new Promise(resolve => setTimeout(resolve, 10));
+			}
+			await env.clipboard.writeText(scenario.pasted);
+			await commands.executeCommand('editor.action.clipboardPasteAction');
+			await wrapping;
+			expect(editor.document.getText()).to.equal(scenario.expected);
+			expect(editor.selections).to.have.length(1);
+		} finally {
+			await env.clipboard.writeText(originalClipboard);
+			await config.update('tag', undefined, true);
+			await config.update('autoDeselectClosingTag', undefined, true);
+			await commands.executeCommand('workbench.action.closeActiveEditor');
+		}
+	});
+	}
+	test('pasted attributes work with multiple selections and quoted spaces', async function () {
+		this.timeout(10000);
+		const originalClipboard = await env.clipboard.readText();
+		const config = workspace.getConfiguration('htmltagwrap');
+		const document = await workspace.openTextDocument({ language: 'html', content: 'hello world' });
+		const editor = await window.showTextDocument(document);
+		await config.update('tag', 'p', true);
+		await config.update('autoDeselectClosingTag', true, true);
+		try {
+			editor.selections = [new Selection(0, 0, 0, 5), new Selection(0, 6, 0, 11)];
+			const wrapping = commands.executeCommand('extension.htmlTagWrap');
+			const deadline = Date.now() + 5000;
+			while (editor.document.getText() !== '<p>hello</p> <p>world</p>' || editor.selections.length !== 4) {
+				if (Date.now() > deadline) throw new Error('Wrap did not complete');
+				await new Promise(resolve => setTimeout(resolve, 10));
+			}
+			await env.clipboard.writeText('code data-label="hello world"');
+			await commands.executeCommand('editor.action.clipboardPasteAction');
+			await wrapping;
+			expect(editor.document.getText()).to.equal('<code data-label="hello world">hello</code> <code data-label="hello world">world</code>');
+			expect(editor.selections).to.have.length(2);
+			expect(editor.selections.every(selection => selection.isEmpty)).to.equal(true);
+		} finally {
+			await env.clipboard.writeText(originalClipboard);
 			await config.update('tag', undefined, true);
 			await config.update('autoDeselectClosingTag', undefined, true);
 			await commands.executeCommand('workbench.action.closeActiveEditor');

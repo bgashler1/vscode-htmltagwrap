@@ -15,13 +15,20 @@ class Selection extends Range {}
 
 function runCase(tag, replacedSelection, mixed = false, mouse = false) {
   let listener;
+  let documentListener;
   const vscode = {
     Position, Range, Selection,
     window: { onDidChangeTextEditorSelection(callback) {
       listener = callback;
       return { dispose() { listener = undefined; } };
     } },
-    workspace: { getConfiguration() { return { get() { return tag; } }; } }
+    workspace: {
+      getConfiguration() { return { get() { return tag; } }; },
+      onDidChangeTextDocument(callback) {
+        documentListener = callback;
+        return { dispose() { documentListener = undefined; } };
+      }
+    }
   };
   const oldLoad = Module._load;
   Module._load = function (name, ...rest) {
@@ -86,7 +93,10 @@ function runCase(tag, replacedSelection, mixed = false, mouse = false) {
     return true;
   } };
   const promise = autoDeselectClosingTag(editor, passed);
-  if (!mouse) document.version++;
+  if (!mouse) {
+    document.version++;
+    documentListener({ document, contentChanges: [{ text: ' ' }] });
+  }
   listener({ kind: mouse ? 2 : 1, textEditor: editor, selections: current });
   return promise.then(() => {
     const caret = editor.selections[0].start.character;
