@@ -1,25 +1,29 @@
 import * as vscode from 'vscode';
-import { announceNotableUpdate } from './utilities';
+import { announceNotableUpdate, getTagDefinition } from './utilities';
 import { wrapInTagsAndSelect, wrapInBlockTagsAndSelect } from './wrap';
 import { autoDeselectClosingTag, cancelAutoDeselectClosingTag } from './autoDeselectClosingTag';
-import { getTagDefinition } from './utilities';
 import { wrapWithSnippet } from './snippets';
 import { unwrapIfWrapped } from './toggle';
-
+interface BlockWrapSnapshot {
+	version: number;
+	text: string;
+	selections: readonly vscode.Selection[];
+	tagSelections: readonly vscode.Selection[];
+}
 
 export function activate(extensionContext?: vscode.ExtensionContext) {
 	const wrapGeneration = new WeakMap<vscode.TextEditor, number>();
 	const inlineWrapVersion = new WeakMap<vscode.TextEditor, number>();
-	const lastBlockWrap = new WeakMap<vscode.TextEditor, { version: number; text: string; selections: readonly vscode.Selection[]; tagSelections: readonly vscode.Selection[] }>();
-	// Code in this function runs each time extension is activated
-	// The command's name is pre-declared in package.json
+	const lastBlockWrap = new WeakMap<vscode.TextEditor, BlockWrapSnapshot>();
 	const runWrap = async (block: boolean) => {
 		const editor = vscode.window.activeTextEditor;
-		if(editor == null) return;
+		if (!editor) return;
+		// The generation also guards a prior wrap that has not installed its listener yet.
 		const generation = (wrapGeneration.get(editor) || 0) + 1;
 		wrapGeneration.set(editor, generation);
 		cancelAutoDeselectClosingTag(editor);
 		const previousBlock = lastBlockWrap.get(editor);
+		// A block wrap changes indentation, so restore its exact snapshot when toggled.
 		if (!block && previousBlock?.version === editor.document.version &&
 			editor.selections.length === previousBlock.tagSelections.length &&
 			editor.selections.every((selection, index) => selection.isEqual(previousBlock.tagSelections[index]))) {
@@ -45,8 +49,8 @@ export function activate(extensionContext?: vscode.ExtensionContext) {
 		if (!block) inlineWrapVersion.set(editor, editor.document.version);
 		if (block && originalBlock) lastBlockWrap.set(editor, { ...originalBlock, version: editor.document.version, tagSelections: passedSelections.slice() });
 
-		const isEnabledAutodeselectClosingTag = vscode.workspace.getConfiguration().get<boolean>("htmltagwrap.autoDeselectClosingTag");
-		if (!isEnabledAutodeselectClosingTag || wrapGeneration.get(editor) !== generation) return;
+		const autoDeselectEnabled = vscode.workspace.getConfiguration().get<boolean>('htmltagwrap.autoDeselectClosingTag');
+		if (!autoDeselectEnabled || wrapGeneration.get(editor) !== generation) return;
 		await autoDeselectClosingTag(editor, passedSelections);
 	};
 	const wrapCommand = vscode.commands.registerCommand('extension.htmlTagWrap', () => runWrap(false));
