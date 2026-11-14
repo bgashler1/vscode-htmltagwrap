@@ -78,6 +78,32 @@ async function parametrizedMultiSelectionTest(startFilePath: string, expectedRes
 
 
 suite('Extension Tests', function () {
+	for (const tag of ['p', 'div', 'CountContext']) {
+		test(`space after wrapping preserves the ${tag} closing tag`, async function () {
+			const config = workspace.getConfiguration('htmltagwrap');
+			const document = await workspace.openTextDocument({ language: 'html', content: 'hello' });
+			const editor = await window.showTextDocument(document);
+			await config.update('tag', tag, true);
+			await config.update('autoDeselectClosingTag', true, true);
+			try {
+				editor.selection = new Selection(0, 0, 0, 5);
+				const wrapping = commands.executeCommand('extension.htmlTagWrap');
+				const deadline = Date.now() + 5000;
+				while (editor.document.getText() !== `<${tag}>hello</${tag}>`) {
+					if (Date.now() > deadline) throw new Error('Wrap did not complete');
+					await new Promise(resolve => setTimeout(resolve, 10));
+				}
+				await commands.executeCommand('type', { text: ' ' });
+				await wrapping;
+				expect(editor.document.getText()).to.equal(`<${tag} >hello</${tag}>`);
+				expect(editor.selections).to.have.length(1);
+			} finally {
+				await config.update('tag', undefined, true);
+				await config.update('autoDeselectClosingTag', undefined, true);
+				await commands.executeCommand('workbench.action.closeActiveEditor');
+			}
+		});
+	}
 	
 	// Single selection tests
 	test('HTML with tabs block wrap test', function () {
