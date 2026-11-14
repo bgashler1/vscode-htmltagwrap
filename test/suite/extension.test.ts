@@ -78,6 +78,94 @@ async function parametrizedMultiSelectionTest(startFilePath: string, expectedRes
 
 
 suite('Extension Tests', function () {
+	for (const tag of ['p', 'CountContext.Provider']) {
+	test(`toggle immediately after wrapping ${tag} restores the selected content`, async function () {
+		const config = workspace.getConfiguration('htmltagwrap');
+		const document = await workspace.openTextDocument({ language: 'html', content: 'hello' });
+		const editor = await window.showTextDocument(document);
+		editor.options = { insertSpaces: true, tabSize: 2 };
+		await config.update('tag', tag, true);
+		await config.update('autoDeselectClosingTag', false, true);
+		try {
+			editor.selection = new Selection(0, 0, 0, 5);
+			await commands.executeCommand('extension.htmlTagWrap');
+			expect(editor.document.getText()).to.equal(`<${tag}>hello</${tag}>`);
+			expect(editor.selections.map(selection => editor.document.getText(selection))).to.deep.equal([tag, tag]);
+			await commands.executeCommand('extension.htmlTagWrap');
+			expect(editor.document.getText()).to.equal('hello');
+			expect(editor.document.getText(editor.selection)).to.equal('hello');
+		} finally {
+			await config.update('tag', undefined, true);
+			await config.update('autoDeselectClosingTag', undefined, true);
+			await commands.executeCommand('workbench.action.closeActiveEditor');
+		}
+	});
+	}
+	test('toggle restores multiple selections wrapped with attributes', async function () {
+		const config = workspace.getConfiguration('htmltagwrap');
+		const document = await workspace.openTextDocument({ language: 'html', content: 'hello world' });
+		const editor = await window.showTextDocument(document);
+		await config.update('tag', 'p title="a > b"', true);
+		await config.update('autoDeselectClosingTag', false, true);
+		try {
+			editor.selections = [new Selection(0, 0, 0, 5), new Selection(0, 6, 0, 11)];
+			await commands.executeCommand('extension.htmlTagWrap');
+			expect(editor.document.getText()).to.equal('<p title="a > b">hello</p> <p title="a > b">world</p>');
+			expect(editor.selections.map(selection => editor.document.getText(selection))).to.deep.equal(['p', 'p', 'p', 'p']);
+			await commands.executeCommand('extension.htmlTagWrap');
+			expect(editor.document.getText()).to.equal('hello world');
+			expect(editor.selections.map(selection => editor.document.getText(selection))).to.deep.equal(['hello', 'world']);
+		} finally {
+			await config.update('tag', undefined, true);
+			await config.update('autoDeselectClosingTag', undefined, true);
+			await commands.executeCommand('workbench.action.closeActiveEditor');
+		}
+	});
+	test('toggle works while auto-deselect is waiting for an edit', async function () {
+		this.timeout(10000);
+		const config = workspace.getConfiguration('htmltagwrap');
+		const document = await workspace.openTextDocument({ language: 'html', content: 'hello' });
+		const editor = await window.showTextDocument(document);
+		await config.update('tag', 'p', true);
+		await config.update('autoDeselectClosingTag', true, true);
+		try {
+			editor.selection = new Selection(0, 0, 0, 5);
+			const firstWrap = commands.executeCommand('extension.htmlTagWrap');
+			const deadline = Date.now() + 5000;
+			while (editor.document.getText() !== '<p>hello</p>' || editor.selections.length !== 2) {
+				if (Date.now() > deadline) throw new Error('Initial wrap did not complete');
+				await new Promise(resolve => setTimeout(resolve, 10));
+			}
+			await commands.executeCommand('extension.htmlTagWrap');
+			await firstWrap;
+			expect(editor.document.getText()).to.equal('hello');
+			expect(editor.document.getText(editor.selection)).to.equal('hello');
+		} finally {
+			await config.update('tag', undefined, true);
+			await config.update('autoDeselectClosingTag', undefined, true);
+			await commands.executeCommand('workbench.action.closeActiveEditor');
+		}
+	});
+	test('Alt+W after block wrap restores original text and selection', async function () {
+		const config = workspace.getConfiguration('htmltagwrap');
+		const document = await workspace.openTextDocument({ language: 'html', content: 'hello' });
+		const editor = await window.showTextDocument(document);
+		editor.options = { insertSpaces: true, tabSize: 2 };
+		await config.update('tag', 'p', true);
+		await config.update('autoDeselectClosingTag', false, true);
+		try {
+			editor.selection = new Selection(0, 0, 0, 5);
+			await commands.executeCommand('extension.htmlTagWrapBlock');
+			expect(editor.document.getText()).to.equal('<p>\n  hello\n</p>');
+			await commands.executeCommand('extension.htmlTagWrap');
+			expect(editor.document.getText()).to.equal('hello');
+			expect(editor.document.getText(editor.selection)).to.equal('hello');
+		} finally {
+			await config.update('tag', undefined, true);
+			await config.update('autoDeselectClosingTag', undefined, true);
+			await commands.executeCommand('workbench.action.closeActiveEditor');
+		}
+	});
 	for (const scenario of [
 		{ name: 'basic', input: 'hello', selections: [new Selection(0, 0, 0, 5)], before: '<!-- ', after: ' -->', expected: '<!-- hello -->', selected: ['hello'] },
 		{ name: 'empty before', input: 'hello', selections: [new Selection(0, 0, 0, 5)], before: '', after: '!', expected: 'hello!', selected: ['hello'] },

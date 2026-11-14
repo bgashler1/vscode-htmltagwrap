@@ -2,6 +2,12 @@ import { window, workspace, Disposable, Selection, Range, TextEditor, Position }
 import { SpaceInsertedPromiseResolution } from './types';
 import { getTagDefinition } from './utilities';
 
+const pendingCancellation = new WeakMap<TextEditor, () => void>();
+
+export function cancelAutoDeselectClosingTag(editor: TextEditor): void {
+	pendingCancellation.get(editor)?.();
+}
+
 function lastClosingTagStart(prefix: string): number {
 	let quote = '';
 	let closingStart = -1;
@@ -26,10 +32,12 @@ export async function autoDeselectClosingTag (editor: TextEditor, passedSelectio
 		let windowListener: Disposable;
 		let lastDocumentVersion = editor.document.version;
 		let lastContentChanges: string[] = [];
+		let cancelWaiting: () => void = () => undefined;
 		const documentListener = workspace.onDidChangeTextDocument(event => {
 			if (event.document === editor.document) lastContentChanges = event.contentChanges.map(change => change.text);
 		});
 		const autoDeselectClosingTagAction: Promise<SpaceInsertedPromiseResolution | { kind: 'pasted-attributes'; ranges: Range[]; openingCarets: Position[] } | string> = new Promise((resolve, reject) => {
+			cancelWaiting = () => resolve('Cancelled by another wrap command');
 			// Have selections changed?
 			windowListener = window.onDidChangeTextEditorSelection(e => {
 				if (e.textEditor !== editor || e.selections.length === 0) return;
@@ -58,14 +66,16 @@ export async function autoDeselectClosingTag (editor: TextEditor, passedSelectio
 					}
 					if (ranges.length > 0) resolve({ kind: 'pasted-attributes', ranges, openingCarets: e.selections.filter((_selection, index) => index % 2 === 0).map(selection => selection.start) });
 				}
-				else if (e.kind === 2 || (!documentChanged && e.selections.length !== passedSelections.length)) {
+				else if (e.kind === 2 || e.selections.length !== passedSelections.length) {
 					// Listen for anything that changes selection but keyboard input
 					// or an undefined event (such as backspace clearing last selected character)
 					resolve('✔ User changed selection. Event type: ' + e.kind);
 				}
 			});
 		});
+		pendingCancellation.set(editor, cancelWaiting);
 		const selectionsAfterEvent = await autoDeselectClosingTagAction;
+		if (pendingCancellation.get(editor) === cancelWaiting) pendingCancellation.delete(editor);
 		//Cleanup memory and processes
 		windowListener.dispose();
 		documentListener.dispose();

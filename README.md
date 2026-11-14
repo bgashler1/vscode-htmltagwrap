@@ -14,6 +14,8 @@ or
 * Press <kbd>Alt</kbd> + <kbd>W</kbd> or <kbd>Option</kbd> + <kbd>W</kbd> for Mac.
 * Type the tag name you want.
 
+Press the wrap shortcut again while both inserted tag names are selected to remove the tags and restore the original selection. This also works for multiple wrapped selections.
+
 Press <kbd>Shift</kbd> + <kbd>Alt</kbd> + <kbd>W</kbd> (or <kbd>Shift</kbd> + <kbd>Option</kbd> + <kbd>W</kbd> on Mac) to place the opening tag, selected content, and closing tag on separate lines.
 
 Press <kbd>Shift</kbd> + <kbd>Alt</kbd> + <kbd>S</kbd> (or <kbd>Shift</kbd> + <kbd>Option</kbd> + <kbd>S</kbd> on Mac) to choose a saved wrap snippet. Each snippet inserts its `before` and `after` fragments around every selection.
