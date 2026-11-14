@@ -80,6 +80,7 @@ async function parametrizedMultiSelectionTest(startFilePath: string, expectedRes
 suite('Extension Tests', function () {
 	for (const tag of ['p', 'div', 'CountContext']) {
 		test(`space after wrapping preserves the ${tag} closing tag`, async function () {
+			this.timeout(10000);
 			const config = workspace.getConfiguration('htmltagwrap');
 			const document = await workspace.openTextDocument({ language: 'html', content: 'hello' });
 			const editor = await window.showTextDocument(document);
@@ -89,14 +90,20 @@ suite('Extension Tests', function () {
 				editor.selection = new Selection(0, 0, 0, 5);
 				const wrapping = commands.executeCommand('extension.htmlTagWrap');
 				const deadline = Date.now() + 5000;
-				while (editor.document.getText() !== `<${tag}>hello</${tag}>`) {
-					if (Date.now() > deadline) throw new Error('Wrap did not complete');
+				while (editor.document.getText() !== `<${tag}>hello</${tag}>` ||
+					editor.selections.length !== 2 ||
+					editor.selections.some(selection => editor.document.getText(selection) !== tag)) {
+					if (Date.now() > deadline) throw new Error(`Wrap did not complete: ${editor.document.getText()} ${editor.selections.map(selection => editor.document.getText(selection)).join('|')}`);
 					await new Promise(resolve => setTimeout(resolve, 10));
 				}
+				await new Promise(resolve => setTimeout(resolve, 0));
 				await commands.executeCommand('type', { text: ' ' });
 				await wrapping;
 				expect(editor.document.getText()).to.equal(`<${tag} >hello</${tag}>`);
 				expect(editor.selections).to.have.length(1);
+				expect(editor.selection.active.character).to.equal(tag.length + 2);
+				await commands.executeCommand('type', { text: 'class="x"' });
+				expect(editor.document.getText()).to.equal(`<${tag} class="x">hello</${tag}>`);
 			} finally {
 				await config.update('tag', undefined, true);
 				await config.update('autoDeselectClosingTag', undefined, true);
