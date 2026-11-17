@@ -64,6 +64,8 @@ export async function autoDeselectClosingTag (editor: TextEditor, passedSelectio
 					if (ranges.length > 0) resolve({ kind: 'pasted-attributes', ranges, openingCarets: e.selections.filter((_selection, index) => index % 2 === 0).map(selection => selection.start) });
 				}
 				else if (e.kind === 2 || e.selections.length !== passedSelections.length) {
+					// Typing and backspace can emit keyboard or undefined selection
+					// events. A mouse move or changed cursor count ends this mode.
 					resolve('✔ User changed selection. Event type: ' + e.kind);
 				}
 			});
