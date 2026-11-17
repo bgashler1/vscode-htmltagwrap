@@ -10,8 +10,8 @@ Each row was tested from an isolated archive of the exact PR tree. #51 contains 
 | [#48](https://github.com/bgashler1/vscode-htmltagwrap/pull/48) | `efff145ec7fbf3772fefba8f5ac3fab731623c46` | 35/35 | [Before](pr48-bug.mp4) · [After](pr48-fix.mp4) · [Comparison](pr48-comparison.jpg) |
 | [#49](https://github.com/bgashler1/vscode-htmltagwrap/pull/49) | `8e3567d422b727f9e382e26bced4a5a3cfcba1cf` | 43/43 | [Before](pr49-bug.mp4) · [After](pr49-fix.mp4) · [Comparison](pr49-comparison.jpg) |
 | [#50](https://github.com/bgashler1/vscode-htmltagwrap/pull/50) | `be585dd34569a4fdd15ca6d986ad5d46b131bc9c` | 48/48 | [Before](pr50-bug.mp4) · [After](pr50-fix.mp4) · [Comparison](pr50-comparison.jpg) |
-| [#51](https://github.com/bgashler1/vscode-htmltagwrap/pull/51) | `e866d810560ff61f0111c98211f681f114ed7505` | 48/48 | Source cleanup; no UI change |
-| [#47](https://github.com/bgashler1/vscode-htmltagwrap/pull/47) | `ef7a4a9e4a5f7203c4ad8c41cbe04d8b8e4d4491` | 48/48 | VSIX package proof below |
+| [#51](https://github.com/bgashler1/vscode-htmltagwrap/pull/51) | `8a3de82deaa161c61b319c714e4585f3ca3a4ca0` | 48/48 | Source cleanup with explanatory comments; no UI change |
+| [#47](https://github.com/bgashler1/vscode-htmltagwrap/pull/47) | `4da9808d7c517c67b135e4cf9f5c0407d57abcb4` | 48/48 | VSIX package proof below |
 
 ## Recording method
 
@@ -19,7 +19,7 @@ The videos show the actual VS Code 1.146 editor from the parent and fixed PR hea
 
 ## Publishing package proof
 
-On the exact #47 tree, `npx --yes @vscode/vsce@4.0.0 package --out htmltagwrap.vsix` succeeded after `.vscode-test` was excluded. The 20-file VSIX includes `extension/out/src/{extension,wrap,autoDeselectClosingTag,snippets,toggle}.js`, package metadata, and icon assets. It excludes tests, the workflow, and the downloaded VS Code editor. The rebased #47 tip passed a clean `npm ci` and produced a 20-file VSIX with SHA-256 `57caffb2d38fc82fbb41c44acf1598eef0cc119de9132777caf8b2d45c575de9`. The workflow YAML parsed; `v1.0.0` passed its tag guard and `v1.0.1` failed it as expected. Actual registry publication requires repository secrets `VSCE_PAT` and `OVSX_PAT`.
+On the exact #47 tree, `npx --yes @vscode/vsce@4.0.0 package --out htmltagwrap.vsix` succeeded after `.vscode-test` was excluded. The 20-file VSIX includes `extension/out/src/{extension,wrap,autoDeselectClosingTag,snippets,toggle}.js`, package metadata, and icon assets. It excludes tests, the workflow, and the downloaded VS Code editor. The rebased #47 tip passed compile, lint, unit, and host tests and produced a 20-file VSIX with SHA-256 `5360d08ccc961cc2f8784ee8c8bf5026775c0cb39a131a0bed4ba462fd50dbd1`. The workflow YAML parsed; `v1.0.0` passed its tag guard and `v1.0.1` failed it as expected. Actual registry publication requires repository secrets `VSCE_PAT` and `OVSX_PAT`.
 
 ## Reproduce host tests
 
