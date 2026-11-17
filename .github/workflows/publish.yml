@@ -1,0 +1,61 @@
+name: Publish extension
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        vscode: ['1.74.3', 'stable']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run compile
+      - run: npm run lint
+      - run: npm run test:unit
+      - run: xvfb-run -a npm run test:LinuxAndOSX
+        env:
+          VSCODE_TEST_VERSION: ${{ matrix.vscode }}
+
+  publish:
+    if: github.repository == 'bgashler1/vscode-htmltagwrap'
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Check tag matches extension version
+        run: node -e "const version=require('./package.json').version; if(process.env.GITHUB_REF_NAME !== 'v'+version) throw new Error('Tag and package.json version differ')"
+      - name: Check publishing credentials
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+        run: |
+          test -n "$VSCE_PAT" || { echo '::error::Set repository secret VSCE_PAT'; exit 1; }
+          test -n "$OVSX_PAT" || { echo '::error::Set repository secret OVSX_PAT'; exit 1; }
+      - name: Package one VSIX for both registries
+        run: npx --yes @vscode/vsce@4.0.0 package --out htmltagwrap.vsix
+      - name: Publish to Visual Studio Marketplace
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        run: npx --yes @vscode/vsce@4.0.0 publish --packagePath htmltagwrap.vsix --skip-duplicate
+      - name: Publish to Open VSX
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+        run: npx --yes ovsx@1.4.0 publish htmltagwrap.vsix --skip-duplicate
