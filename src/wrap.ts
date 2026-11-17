@@ -1,17 +1,13 @@
 import { TextEditor, Position, Selection, Range, EndOfLine } from 'vscode';
 import { getTabString } from './utilities';
-import { RangeIndexList } from './types';
 
-/*
-First, temporarily leave tags empty if they start/end on the same line to work around VS Code's default setting `html.autoClosingTags,`.
-This setting would autocloses these opening tags if they come with element names already inside them.
-*/
-const openingTags: string = '<' + '>';
-const closingTags: string = '</' + '>';
+// Insert empty tags first so VS Code's html.autoClosingTags does not add another closing tag.
+const openingTags = '<>';
+const closingTags = '</>';
 
-export async function wrapInTagsAndSelect(editor:TextEditor, tag: string, attributes = '') {
+export async function wrapInTagsAndSelect(editor: TextEditor, tag: string, attributes = '') {
     const tagsMissingElements = await wrapInEmptyTags(editor, tag, attributes);
-    return await selectAndAddTags(editor, tag, attributes, tagsMissingElements);
+    return selectAndAddTags(editor, tag, attributes, tagsMissingElements);
 }
 
 export async function wrapInBlockTagsAndSelect(editor: TextEditor, tag: string, attributes = ''): Promise<readonly Selection[]> {
@@ -23,17 +19,20 @@ export async function wrapInBlockTagsAndSelect(editor: TextEditor, tag: string, 
 		const leadingIndent = firstLine.text.substring(0, firstLine.firstNonWhitespaceCharacterIndex);
 		let start = selection.start;
 		let end = selection.end;
+		// A line-start selection already includes the indentation. Move past it so
+		// the opening tag keeps the block's existing indent instead of duplicating it.
 		if (start.character === 0 && leadingIndent && (end.line > start.line || end.character === firstLine.text.length)) {
 			start = new Position(start.line, leadingIndent.length);
 		}
+		// A selection ending at the next line's column zero does not include that line.
 		if (end.line > start.line && end.character === 0) {
 			end = document.lineAt(end.line - 1).range.end;
 		}
 		const range = new Range(start, end);
 		const selectedText = document.getText(range);
-		const inner = selectedText.split(/\r?\n/).map((line, index) => {
-			return index === 0 ? leadingIndent + indentation + line : indentation + line;
-		}).join(eol);
+		const inner = selectedText.split(/\r?\n/)
+			.map((line, index) => index === 0 ? leadingIndent + indentation + line : indentation + line)
+			.join(eol);
 		const prefix = '<' + tag + attributes + '>' + eol;
 		const suffix = eol + leadingIndent + '</' + tag + '>';
 		const offset = document.offsetAt(start);
@@ -65,43 +64,26 @@ export async function wrapInBlockTagsAndSelect(editor: TextEditor, tag: string, 
 }
 
 async function wrapInEmptyTags (editor: TextEditor, tag: string, attributes: string) {
-	const tagsMissingElements: RangeIndexList = [];
-    // Start inserting tags
+	const tagsMissingElements: number[] = [];
     const tabSizeSpace = getTabString(editor);
+	// Keep both edits in one undo step. VS Code shifts selections after this
+	// first edit, and the second edit uses their new positions.
 	await editor.edit((editBuilder) => {
-
-		const selections = editor.selections;
-		
-		for(const [i, selection] of selections.entries()) {
-
+		for(const [i, selection] of editor.selections.entries()) {
 			const selectionStart = selection.start;
 			const selectionEnd = selection.end;
+			if (selectionEnd.line !== selectionStart.line) {
+				const lineIndent = editor.document.lineAt(selectionStart.line).text.substring(0, selectionStart.character);
 
-			
-			if(selectionEnd.line !== selection.start.line) {
-				// ================
-				// Block wrap
-				// ================
-
-				const selectionStart_spaces = editor.document.lineAt(selectionStart.line).text.substring(0, selectionStart.character);
-				
-				// Modify last line of selection (start from bottom, so changes don't impact position accuracy downward)
 				editBuilder.insert(new Position(selectionEnd.line, 0), tabSizeSpace);
-				editBuilder.insert(new Position(selectionEnd.line, selectionEnd.character), '\n' + selectionStart_spaces + '</' + tag + '>');
-
+				editBuilder.insert(new Position(selectionEnd.line, selectionEnd.character), '\n' + lineIndent + '</' + tag + '>');
 
 				for (let lineNumber = selectionEnd.line - 1; lineNumber > selectionStart.line; lineNumber--) {
 					editBuilder.insert(new Position(lineNumber, 0), tabSizeSpace);
 				}
 
-				// Modify first line of selection
-				editBuilder.insert(new Position(selectionStart.line, selectionStart.character), '<' + tag + attributes + '>\n' + selectionStart_spaces + tabSizeSpace);
-			}
-			else {
-				// ================
-				// Inline wrap
-				// ================
-				
+				editBuilder.insert(new Position(selectionStart.line, selectionStart.character), '<' + tag + attributes + '>\n' + lineIndent + tabSizeSpace);
+			} else {
 				const beginningPosition = new Position(selectionEnd.line, selectionStart.character);
 				const endingPosition = new Position(selectionEnd.line, selectionEnd.character);
 				editBuilder.insert(beginningPosition, openingTags);
@@ -116,83 +98,49 @@ async function wrapInEmptyTags (editor: TextEditor, tag: string, attributes: str
     return tagsMissingElements;
 }
 
-async function selectAndAddTags (editor: TextEditor, tag: string, attributes: string, tagsMissingElements: RangeIndexList): Promise<readonly Selection[]> {
-    const tabSizeSpace = getTabString(editor);
-    // Add tag name elements
-    // Need to fetch selections again as they are no longer accurate
-    let selections = editor.selections;
-    try {
-        await editor.edit((editBuilder) => {
+async function selectAndAddTags(editor: TextEditor, tag: string, attributes: string, tagsMissingElements: number[]): Promise<readonly Selection[]> {
+	const indentation = getTabString(editor);
+	const selectionsBeforeEdit = editor.selections;
+	try {
+		await editor.edit(editBuilder => {
+			for (const index of tagsMissingElements) {
+				const selection = selectionsBeforeEdit[index];
+				let openingName = selection.start.translate(0, -1);
+				const closingName = selection.end.translate(0, -1);
+				if (selection.isEmpty) {
+					// VS Code moves an empty selection past the inserted closing tag.
+					openingName = openingName.translate(0, -3);
+				}
+				editBuilder.insert(openingName, tag + attributes);
+				editBuilder.insert(closingName, tag);
+			}
+		}, { undoStopBefore: false, undoStopAfter: true });
+	} catch (error) {
+		console.error('Element name insertion rejected!', error);
+	}
 
-            const tagsMissingElementsSelections: Selection[] = tagsMissingElements.map(index => {
-                return selections[index];
-            });
-
-            tagsMissingElementsSelections.map(selection => {
-                let tagFirst = selection.start.translate(0,-1);
-                const tagSecond = selection.end.translate(0,-1);
-                if(selection.start.character === selection.end.character) {
-                    // Empty selection
-                    // When dealing with an empty selection, both the start and end position end up being *after* the closing tag
-                    // backtrack to account for that
-                    tagFirst = tagFirst.translate(0,-3);
-                }
-                editBuilder.insert(tagFirst, tag + attributes);
-                editBuilder.insert(tagSecond, tag);
-            });
-        }, {
-            undoStopBefore: false,
-            undoStopAfter: true
-        });
-        console.log('Edit applied!');
-    }
-    catch (err) {
-        console.error('Element name insertion rejected! ', err);
-    }
-        
-    // Need latest prior selections again or we'll update them incorrectly
-    selections = editor.selections;
-    const toSelect: Array<Selection> = new Array<Selection>();
-
-    await new Promise(resolve => {
-        // Need to fetch selections again as they are no longer accurate
-        for(const selection of selections) {
-            
-            // Careful : the selection starts at the beginning of the text but ends *after* the closing tag
-            if(selection.end.line !== selection.start.line) {
-                // ================
-                // Block selection
-                // ================
-
-                const lineAbove = selection.start.line - 1;
-                const lineBelow = selection.end.line;
-                const startPosition = selection.start.character - tabSizeSpace.length + 1;
-                const endPosition = selection.end.character - 1 - tag.length;
-
-                toSelect.push(new Selection(lineAbove, startPosition, lineAbove, startPosition + tag.length));
-                toSelect.push(new Selection(lineBelow, endPosition, lineBelow, endPosition + tag.length));
-            }
-            else {
-                // ================
-                // Inline selection
-                // ================
-                // same line, just get to the tag element by navigating backwards
-
-                let startPosition = selection.start.character - 1 - tag.length - attributes.length;
-                const endPosition = selection.end.character - 1 - tag.length;
-
-                if(selection.start.character === selection.end.character) {
-                    // Empty selection
-                    startPosition = startPosition - 3 - tag.length;
-                }
-
-                toSelect.push(new Selection(selection.start.line, startPosition, selection.start.line, startPosition + tag.length));
-                toSelect.push(new Selection(selection.end.line, endPosition, selection.end.line, endPosition + tag.length));
-            }
-            resolve(null);
-            
-        }
-    });
-    editor.selections = toSelect;
-    return editor.selections;
+	// The edit moves VS Code's selections, so calculate tag positions from their updated positions.
+	const tagSelections: Selection[] = [];
+	for (const selection of editor.selections) {
+		if (selection.end.line !== selection.start.line) {
+			// The selected content now sits between new tag lines. Recover their
+			// name positions from the updated selection and inserted indentation.
+			const openingLine = selection.start.line - 1;
+			const closingLine = selection.end.line;
+			const openingColumn = selection.start.character - indentation.length + 1;
+			const closingColumn = selection.end.character - 1 - tag.length;
+			tagSelections.push(new Selection(openingLine, openingColumn, openingLine, openingColumn + tag.length));
+			tagSelections.push(new Selection(closingLine, closingColumn, closingLine, closingColumn + tag.length));
+		} else {
+			// Inline selections end after the closing tag. Empty selections also
+			// move past the opening placeholder, so they need one extra backtrack.
+			let openingColumn = selection.start.character - 1 - tag.length - attributes.length;
+			const closingColumn = selection.end.character - 1 - tag.length;
+			if (selection.isEmpty) openingColumn -= 3 + tag.length;
+			tagSelections.push(new Selection(selection.start.line, openingColumn, selection.start.line, openingColumn + tag.length));
+			tagSelections.push(new Selection(selection.end.line, closingColumn, selection.end.line, closingColumn + tag.length));
+		}
+	}
+	editor.selections = tagSelections;
+	return editor.selections;
 }
